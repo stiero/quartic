@@ -53,13 +53,14 @@ train = cat_cols_to_object(train)
 test = cat_cols_to_object(test)
 
 #Number of unique classes in each object predictor
-train.select_dtypes('object').apply(pd.Series.nunique, axis = 0)
+train.select_dtypes('object').apply(pd.Series.nunique, axis = 0).sum()
 test.select_dtypes('object').apply(pd.Series.nunique, axis = 0)
 
 missing_cats_train = missing_values(train.filter(regex='cat'))
 missing_cats_test = missing_values(test.filter(regex='cat'))
 
-train_new = pd.DataFrame(index=train['id'])
+#train_new = pd.DataFrame(index=train['id'])
+train_new = pd.DataFrame()
 
 #Encoding categorical variables
 le = LabelEncoder()
@@ -72,7 +73,8 @@ for col in train:
            le.fit(train[col])
            le_train = le.transform(train[col])
            #train_new.append({col: le_train}, ignore_index=True)
-           train_new.append(pd.DataFrame(le_train))
+           del train[col]
+           train_new = pd.concat([train_new, pd.DataFrame(le_train)], axis = 1)
            #test[col] = le.transform(test[col])
             
            print(le_train)
@@ -81,11 +83,28 @@ for col in train:
         else:
             temp_col = pd.get_dummies(train[col], drop_first=True)   
             del train[col]
-            train_new = pd.concat([train_new, temp_col], axis = 0)
+            train_new = pd.concat([train_new, temp_col], axis = 1)
             ohe_count += 1
             
 print('%d columns were label encoded' %le_count)
 
+train = pd.concat([train, train_new], axis = 1)
+
 #One-hot encoding
-train = pd.get_dummies(train)
-test = pd.get_dummies(test)
+#train = pd.get_dummies(train)
+#test = pd.get_dummies(test)
+
+from sklearn.preprocessing import Imputer
+imputer = Imputer(strategy = 'median')
+
+train['num18'] = imputer.fit_transform(np.array(train['num18']).reshape(-1,1))
+
+train['num22'] = imputer.fit_transform(np.array(train['num22']).reshape(-1,1))
+
+train['num19'] = imputer.fit_transform(np.array(train['num19']).reshape(-1,1))
+
+train['num20'] = imputer.fit_transform(np.array(train['num20']).reshape(-1,1))
+
+
+
+
