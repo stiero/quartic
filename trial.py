@@ -18,13 +18,29 @@ import seaborn as sns
 
 from sklearn.preprocessing import StandardScaler
 
+from sklearn.metrics import accuracy_score, roc_auc_score, cohen_kappa_score, confusion_matrix
+
+from sklearn.model_selection import train_test_split
+
+from sklearn.utils import resample
+
+from tqdm import tqdm
+tqdm.pandas(desc="progress-bar")
+
+
 train = pd.read_csv("data_train.csv")
 test = pd.read_csv("data_test.csv")
 
 response = train['target']
+train_ids = train['id']
+test_ids = test['id']
+
 del train['target']
 del train['id']
 del test['id']
+
+train_cols = list(train)
+test_cols = list(test)
 
 response.value_counts()
 #There is class imbalance
@@ -75,7 +91,7 @@ sc = StandardScaler()
 le_count = 0
 ohe_count = 0
 
-for col in train.columns:
+for col in tqdm(train.columns):
     if train[col].dtype == 'object':
         if len(train[col].unique()) <= 2:
            le.fit(train[col])
@@ -105,10 +121,15 @@ for col in train.columns:
             ohe_count += 1
             
     else:
-        sc.fit(np.array(train[col]).reshape(-1,1))
         
-        train[col] = sc.transform(np.array(train[col]).reshape(-1,1))
-        test[col] = sc.transform(np.array(test[col]).reshape(-1,1))
+        #To suppress type conversion warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            
+            sc.fit(np.array(train[col]).reshape(-1,1))
+        
+            train[col] = sc.transform(np.array(train[col]).reshape(-1,1))
+            test[col] = sc.transform(np.array(test[col]).reshape(-1,1))
             
         
 print('%d categorical columns were label encoded' %le_count)
@@ -136,12 +157,60 @@ imputer = Imputer(strategy = 'median')
 
 cols_train = [str(col) for col in train.columns]
 
-for col in cols_train:
+imp_count = 0
+
+for col in tqdm(cols_train):
     if "num" in col:
         train[col] = imputer.fit_transform(np.array(train[col]).reshape(-1,1))
         test[col] = imputer.transform(np.array(test[col]).reshape(-1,1))
+        imp_count += 1
+        
+print('Missing values in %d columns were imputed' %imp_count)
 
 train['target'] = response
+
+
+# Addressing class imbalance
+
+train_maj = train[train['target'] == 0]
+train_min = train[train['target'] == 1]
+
+train_min_sampled = resample(train_min, replace = True,
+                             n_samples = len(train_maj), random_state = 9868)
+
+df = pd.concat([train_maj, train_min_sampled])
+
+df_response = df['target']
+
+
+# Train test split
+
+del df['target']
+
+X_train, X_test, y_train, y_test = train_test_split(df, df_response,
+                                                    test_size=0.1, random_state = 3536)
+
+
+#PCA
+
+def compute_pca(df, n_comps):
+    
+    from sklearn.decomposition import PCA    
+    
+    pca = PCA(n_components = n_comps, copy=True)        
+    
+    df = train.copy()        
+    del df['target']        
+    
+    df = pca.fit_transform(df)        
+    df = np.column_stack((df, np.array(response)))
+    
+    print(pca.explained_variance_ratio_)        
+    print(sum(pca.explained_variance_ratio_))
+
+#train_pca = compute_pca(train)
+
+
 
 ###################################################
 
@@ -149,17 +218,97 @@ train['target'] = response
 
 from sklearn.linear_model import LogisticRegression
 
-log_reg = LogisticRegression(C=0.001)
+metrics_log_reg = {}
 
-log_reg.fit(train, response)
+C = 0.1
 
-log_reg_pred = log_reg.predict(test)
+log_reg = LogisticRegression(C=C, class_weight='balanced')
+
+log_reg.fit(X_train, y_train)
+
+log_reg_pred = pd.Series(log_reg.predict(X_test))
+
+metrics_log_reg['C'] = C
+
+accuracy = accuracy_score(y_test, log_reg_pred)
+metrics_log_reg['accuracy'] = accuracy
+    
+roc = roc_auc_score(y_test, log_reg_pred)
+metrics_log_reg['auc_roc'] = roc
+    
+kappa = cohen_kappa_score(y_test, log_reg_pred)
+metrics_log_reg['kappa'] = kappa
+
+conf_matrix = confusion_matrix(y_test, log_reg_pred)
+metrics_log_reg['conf_matrix'] = conf_matrix
+
+log_reg_pred.value_counts()
 
 
 
 #####################################################
 
-# 
+# Gaussian Naive Bayes
+
+from sklearn.naive_bayes import GaussianNB
+
+metrics_gau_nb = {}
+
+gau_nb = GaussianNB()
+
+gau_nb.fit(X_train, y_train)
+
+gau_nb_pred = pd.Series(gau_nb.predict(X_test))
+
+accuracy = accuracy_score(y_test, gau_nb_pred)
+metrics_gau_nb['accuracy'] = accuracy
+    
+roc = roc_auc_score(y_test, gau_nb_pred)
+metrics_gau_nb['auc_roc'] = roc
+    
+kappa = cohen_kappa_score(y_test, gau_nb_pred)
+metrics_gau_nb['kappa'] = kappa
+
+conf_matrix = confusion_matrix(y_test, gau_nb_pred)
+metrics_gau_nb['conf_matrix'] = conf_matrix
+
+gau_nb_pred.value_counts()
+
+########################################################
+# Random forest
+
+from sklearn.ensemble import RandomForestClassifier
+
+metrics_rf = {}
+
+rf = RandomForestClassifier(n_estimators = 100, random_state = 50, verbose = 1,
+                                       n_jobs = -1, oob_score=True)
+
+#del train['target']
+
+rf.fit(X_train, y_train)
+
+feature_importance_values = rf.feature_importances_
+
+rf_pred = rf.predict_proba(X_test)
+
+accuracy = accuracy_score(y_test, rf_pred)
+metrics_rf['accuracy'] = accuracy
+    
+roc = roc_auc_score(y_test, rf_pred)
+metrics_rf['auc_roc'] = roc
+    
+kappa = cohen_kappa_score(y_test, rf_pred)
+metrics_rf['kappa'] = kappa
+
+conf_matrix = confusion_matrix(y_test, rf_pred)
+metrics_rf['conf_matrix'] = conf_matrix
+
+metrics_rf['oob_score'] = rf.oob_score_
+
+pd.Series(rf_pred).value_counts()
+
+
 
 
 
