@@ -180,3 +180,53 @@ for tr, te in kfold.split(array):
     conf_matrix = confusion_matrix(response_test, rf_pred)
     
     results_rf.append(iter_results)
+    
+    
+###############################################
+    
+from lightgbm import LGBMClassifier
+
+from sklearn.model_selection import KFold    
+
+from sklearn.metrics import accuracy_score, roc_auc_score, cohen_kappa_score, confusion_matrix
+
+kfold = KFold(n_splits=10, shuffle=True, random_state=1986)
+
+array = np.array(train, copy=True)
+#array = train.copy()
+results_lgb = list()  
+
+for tr, te in kfold.split(array):
+    train_cv = array[tr]
+    test_cv = array[te]
+    
+    response_train = train_cv[:,-1]
+    response_test = test_cv[:,-1]
+    
+    train_cv = np.delete(train_cv, -1, axis=1)
+    test_cv = np.delete(test_cv, -1, axis=1)
+    
+    iter_results = dict()
+    
+    lgb = LGBMClassifier(n_estimators=1000, objective='binary', class_weight=None,
+                     learning_rate=0.05, reg_alpha=0.1, reg_lambda=0.1, subsample=1,
+                     n_jobs=-1, random_state=50)
+    
+    lgb.fit(train_cv, response_train)
+    
+    lgb_pred = lgb.predict(test_cv)
+    
+    accuracy = accuracy_score(response_test, lgb_pred)
+    iter_results['accuracy'] = accuracy
+    
+    roc = roc_auc_score(response_test, lgb_pred)
+    iter_results['auc_roc'] = roc
+    
+    kappa = cohen_kappa_score(response_test, lgb_pred)
+    iter_results['kappa'] = kappa
+    
+    conf_matrix = confusion_matrix(response_test, lgb_pred)
+    iter_results['conf_matrix'] = conf_matrix
+    
+    results_lgb.append(iter_results)
+  

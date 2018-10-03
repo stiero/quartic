@@ -109,8 +109,8 @@ for col in tqdm(train.columns):
            le_count += 1
            
         else:
-            ohe_train = pd.get_dummies(train[col], drop_first=True) 
-            ohe_test = pd.get_dummies(test[col], drop_first=True)
+            ohe_train = pd.get_dummies(train[col], drop_first=True, prefix=col) 
+            ohe_test = pd.get_dummies(test[col], drop_first=True, prefix=col)
             
             del train[col]
             del test[col]
@@ -170,25 +170,33 @@ print('Missing values in %d columns were imputed' %imp_count)
 train['target'] = response
 
 
+# Train test split
+
+del train['target']
+
+X_train, X_test, y_train, y_test = train_test_split(train, response,
+                                                    test_size=0.1, random_state = 3536)
+
+
 # Addressing class imbalance
 
-train_maj = train[train['target'] == 0]
-train_min = train[train['target'] == 1]
+X_train['target'] = y_train
+
+train_maj = X_train[X_train['target'] == 0]
+train_min = X_train[X_train['target'] == 1]
 
 train_min_sampled = resample(train_min, replace = True,
                              n_samples = len(train_maj), random_state = 9868)
 
-df = pd.concat([train_maj, train_min_sampled])
+X_train = pd.concat([train_maj, train_min_sampled])
 
-df_response = df['target']
+y_train = X_train['target']
+
+del X_train['target']
+
+#df_response = X_train['target']
 
 
-# Train test split
-
-del df['target']
-
-X_train, X_test, y_train, y_test = train_test_split(df, df_response,
-                                                    test_size=0.1, random_state = 3536)
 
 
 #PCA
@@ -290,8 +298,8 @@ rf.fit(X_train, y_train)
 
 feature_importance_values = rf.feature_importances_
 
-rf_pred = rf.predict_proba(X_test)
-
+rf_pred = rf.predict(X_test)
+    
 accuracy = accuracy_score(y_test, rf_pred)
 metrics_rf['accuracy'] = accuracy
     
@@ -309,7 +317,57 @@ metrics_rf['oob_score'] = rf.oob_score_
 pd.Series(rf_pred).value_counts()
 
 
+##############################################
 
+# Light GBM
+
+from lightgbm import LGBMClassifier
+import gc
+
+metrics_lgb = {}
+
+lgb = LGBMClassifier(n_estimators=3000, objective='binary', class_weight=None,
+                     learning_rate=0.05, reg_alpha=0.1, reg_lambda=0.1, subsample=1,
+                     n_jobs=-1, random_state=50)
+
+lgb.fit(X_train, y_train, eval_metric='auc')
+
+lgb_pred = lgb.predict(X_test)
+
+accuracy = accuracy_score(y_test, lgb_pred)
+metrics_lgb['accuracy'] = accuracy
+    
+roc = roc_auc_score(y_test, lgb_pred)
+metrics_lgb['auc_roc'] = roc
+    
+kappa = cohen_kappa_score(y_test, lgb_pred)
+metrics_lgb['kappa'] = kappa
+
+conf_matrix = confusion_matrix(y_test, lgb_pred)
+metrics_lgb['conf_matrix'] = conf_matrix
+
+
+pd.Series(lgb_pred).value_counts()
+
+
+########################################
+
+
+import xgboost as xgb
+
+dtrain = xgb.DMatrix(X_train, label=y_train)
+dtest = xgb.DMatrix(X_test, label=y_test)
+
+params = {'max_depth': 2, 'eta': 1, 'silent': 0, 'objective': 'binary:logistic',
+          'nthread': 4, 'eval_metric': 'auc'}
+
+evallist = [(dtest, 'eval'), (dtrain, 'train')]
+
+num_rounds = 10
+
+bst = xgb.train(params, dtrain, num_rounds, evallist)
+
+bst_pred = bst.predict(dtest)
 
 
 
