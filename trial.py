@@ -223,6 +223,7 @@ train_min_sampled = resample(train_min, replace = True,
 X_train = pd.concat([train_maj, train_min_sampled])
 
 y_train = X_train['target']
+del X_train['target']
 
 #del X_train['target'], X_test['target']
 
@@ -377,20 +378,21 @@ list_xgb = []
 dtrain = xgb.DMatrix(X_train, label=y_train)
 dtest = xgb.DMatrix(X_test, label=y_test)
 
-params = {'max_depth': 2, 'eta': 1, 'silent': 0, 'objective': 'binary:logistic',
-          'nthread': 4, 'eval_metric': 'auc'}
+params = {'max_depth': 2, 'eta': 0.5, 'silent': 0, 'objective': 'binary:logistic',
+          'nthread': 4, 'eval_metric': 'auc', 'colsample_bytree': 0.8,
+          'subsample': 0.8, 'scale_pos_weight': 26, 'gamma': 200}
 
 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
 
-num_rounds = 10
+num_rounds = 100
 
 
 bst = xgb.train(params, dtrain, num_rounds, evallist)
 
 bst_pred = bst.predict(dtest)
 
-threshold = 0.8
+threshold = 0.5
 
 xgb_pred = bst_pred > threshold
 
