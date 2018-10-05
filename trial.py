@@ -141,61 +141,39 @@ test = pd.concat([test, test_cats_encoded], axis = 1)
 
 #Umputing missing int/float values
 from sklearn.preprocessing import Imputer
-imputer = Imputer(strategy = 'median')
 
-#train['num18'] = imputer.fit_transform(np.array(train['num18']).reshape(-1,1))
-#test['num18'] = imputer.transform(np.array(test['num18']).reshape(-1,1))
+def imputer(train):
+    imputer = Imputer(strategy = 'median')
+    
+    #train['num18'] = imputer.fit_transform(np.array(train['num18']).reshape(-1,1))
+    #test['num18'] = imputer.transform(np.array(test['num18']).reshape(-1,1))
+    
+    #train['num22'] = imputer.fit_transform(np.array(train['num22']).reshape(-1,1))
+    #test['num22'] = imputer.transform(np.array(test['num22']).reshape(-1,1))
+    
+    #train['num19'] = imputer.fit_transform(np.array(train['num19']).reshape(-1,1))
+    #test['num19'] = imputer.transform(np.array(test['num19']).reshape(-1,1))
+    
+    #train['num20'] = imputer.fit_transform(np.array(train['num20']).reshape(-1,1))
+    #test['num20'] = imputer.transform(np.array(test['num20']).reshape(-1,1))
+    
+    cols_train = [str(col) for col in train.columns]
+    
+    imp_count = 0
+    
+    for col in tqdm(cols_train):
+        if "num" in col:
+            train[col] = imputer.fit_transform(np.array(train[col]).reshape(-1,1))
+            test[col] = imputer.transform(np.array(test[col]).reshape(-1,1))
+            imp_count += 1
+            
+    print('Missing values in %d columns were imputed' %imp_count)
+    
+    train['target'] = response
+    
+    return train, test
 
-#train['num22'] = imputer.fit_transform(np.array(train['num22']).reshape(-1,1))
-#test['num22'] = imputer.transform(np.array(test['num22']).reshape(-1,1))
-
-#train['num19'] = imputer.fit_transform(np.array(train['num19']).reshape(-1,1))
-#test['num19'] = imputer.transform(np.array(test['num19']).reshape(-1,1))
-
-#train['num20'] = imputer.fit_transform(np.array(train['num20']).reshape(-1,1))
-#test['num20'] = imputer.transform(np.array(test['num20']).reshape(-1,1))
-
-cols_train = [str(col) for col in train.columns]
-
-imp_count = 0
-
-for col in tqdm(cols_train):
-    if "num" in col:
-        train[col] = imputer.fit_transform(np.array(train[col]).reshape(-1,1))
-        test[col] = imputer.transform(np.array(test[col]).reshape(-1,1))
-        imp_count += 1
-        
-print('Missing values in %d columns were imputed' %imp_count)
-
-train['target'] = response
-
-
-# Train test split
-
-del train['target']
-
-X_train, X_test, y_train, y_test = train_test_split(train, response,
-                                                    test_size=0.1, random_state = 3536)
-
-
-# Addressing class imbalance
-
-X_train['target'] = y_train
-
-train_maj = X_train[X_train['target'] == 0]
-train_min = X_train[X_train['target'] == 1]
-
-train_min_sampled = resample(train_min, replace = True,
-                             n_samples = len(train_maj), random_state = 9868)
-
-X_train = pd.concat([train_maj, train_min_sampled])
-
-y_train = X_train['target']
-
-del X_train['target']
-
-#df_response = X_train['target']
-
+train, test = imputer(train)
 
 
 
@@ -215,8 +193,45 @@ def compute_pca(df, n_comps):
     
     print(pca.explained_variance_ratio_)        
     print(sum(pca.explained_variance_ratio_))
+    
+    return pd.DataFrame(df)
 
-#train_pca = compute_pca(train)
+#train = compute_pca(train, 50)
+
+
+# Train test split
+
+try:
+    del train['target']
+except KeyError:
+    train['target'] = response
+
+X_train, X_test, y_train, y_test = train_test_split(train, response,
+                                                    test_size=0.1, random_state = 3536)
+
+
+# Addressing class imbalance
+
+X_train['target'] = y_train
+
+train_maj = X_train[X_train['target'] == 0]
+train_min = X_train[X_train['target'] == 1]
+
+train_min_sampled = resample(train_min, replace = True,
+                             n_samples = len(train_maj), random_state = 9868)
+
+X_train = pd.concat([train_maj, train_min_sampled])
+
+y_train = X_train['target']
+
+#del X_train['target'], X_test['target']
+
+#df_response = X_train['target']
+
+
+
+
+
 
 
 
@@ -352,8 +367,12 @@ pd.Series(lgb_pred).value_counts()
 
 ########################################
 
-
 import xgboost as xgb
+
+list_xgb = []
+
+
+
 
 dtrain = xgb.DMatrix(X_train, label=y_train)
 dtest = xgb.DMatrix(X_test, label=y_test)
@@ -361,13 +380,42 @@ dtest = xgb.DMatrix(X_test, label=y_test)
 params = {'max_depth': 2, 'eta': 1, 'silent': 0, 'objective': 'binary:logistic',
           'nthread': 4, 'eval_metric': 'auc'}
 
+
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
 
 num_rounds = 10
+
 
 bst = xgb.train(params, dtrain, num_rounds, evallist)
 
 bst_pred = bst.predict(dtest)
 
+threshold = 0.8
 
+xgb_pred = bst_pred > threshold
 
+metrics_xgb = {}
+
+metrics_xgb['num_rounds'] = num_rounds
+metrics_xgb['params'] = params
+
+accuracy = accuracy_score(y_test, xgb_pred)
+metrics_xgb['accuracy'] = accuracy
+    
+roc = roc_auc_score(y_test, xgb_pred)
+metrics_xgb['auc_roc'] = roc
+    
+kappa = cohen_kappa_score(y_test, xgb_pred)
+metrics_xgb['kappa'] = kappa
+
+conf_matrix = confusion_matrix(y_test, xgb_pred)
+metrics_xgb['conf_matrix'] = conf_matrix
+
+metrics_xgb['threshold'] = threshold
+
+sensitivity = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+specificity = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+list_xgb.append(metrics_xgb)
+
+pd.Series(xgb_pred).value_counts()
