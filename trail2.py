@@ -192,7 +192,7 @@ def process_data(train_file, test_file, pca):
     if pca == True:
         train = compute_pca(train, 50)
         
-    return train, response
+    return train, response, test, test_ids
     
     
     
@@ -233,5 +233,5 @@ def data_split(train, response, imbalance_corr):
 
 
 
-train, response = process_data("data_train.csv", "data_test.csv", pca=False)
+train, response, test, test_ids = process_data("data_train.csv", "data_test.csv", pca=False)
 X_train, X_test, y_train, y_test = data_split(train, response, imbalance_corr=False)

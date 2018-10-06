@@ -64,6 +64,8 @@ print(random_search.best_params_)
 results = pd.DataFrame(random_search.cv_results_)
 results.to_csv('xgb-random-grid-search-results-01.csv', index=False)
 
-y_test = random_search.predict_proba(test)
-results_df = pd.DataFrame(data={'id':test_df['id'], 'target':y_test[:,1]})
+y_test = random_search.predict(test)
+test['id'] =  test_ids
+#results_df = pd.DataFrame(data={'id':test['id'], 'target':y_test[:,1]})
+results_df = pd.DataFrame(data={'id':test['id'], 'target':y_test})
 results_df.to_csv('submission-random-grid-search-xgb-porto-01.csv', index=False)
