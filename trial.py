@@ -338,17 +338,23 @@ pd.Series(rf_pred).value_counts()
 # Light GBM
 
 from lightgbm import LGBMClassifier
-import gc
+
+list_lgb = []
 
 metrics_lgb = {}
 
-lgb = LGBMClassifier(n_estimators=3000, objective='binary', class_weight=None,
-                     learning_rate=0.05, reg_alpha=0.1, reg_lambda=0.1, subsample=1,
+lgb = LGBMClassifier(n_estimators=5000, objective='binary', class_weight='balanced',
+                     learning_rate=0.005, reg_alpha=0.5, reg_lambda=0.3, subsample=0.8,
                      n_jobs=-1, random_state=50)
 
-lgb.fit(X_train, y_train, eval_metric='auc')
+lgb.fit(X_train, y_train, eval_metric='auc', verbose=True)
 
-lgb_pred = lgb.predict(X_test)
+#lgb_pred = lgb.predict(X_test)
+lgb_pred_prob = lgb.predict_proba(X_test)[:,1]
+
+threshold = 0.5
+
+lgb_pred = lgb_pred_prob > threshold
 
 accuracy = accuracy_score(y_test, lgb_pred)
 metrics_lgb['accuracy'] = accuracy
@@ -362,6 +368,7 @@ metrics_lgb['kappa'] = kappa
 conf_matrix = confusion_matrix(y_test, lgb_pred)
 metrics_lgb['conf_matrix'] = conf_matrix
 
+list_lgb.append(metrics_lgb)
 
 pd.Series(lgb_pred).value_counts()
 
@@ -379,13 +386,13 @@ dtrain = xgb.DMatrix(X_train, label=y_train)
 dtest = xgb.DMatrix(X_test, label=y_test)
 
 params = {'max_depth': 2, 'eta': 0.5, 'silent': 0, 'objective': 'binary:logistic',
-          'nthread': 4, 'eval_metric': 'auc', 'colsample_bytree': 0.8,
-          'subsample': 0.8, 'scale_pos_weight': 26, 'gamma': 200}
+          'nthread': 4, 'eval_metric': 'auc', 'colsample_bytree': 0.8, 'subsample': 0.8, 
+          'scale_pos_weight': 26, 'gamma': 200, 'learning_rate': 0.02}
 
 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
 
-num_rounds = 100
+num_rounds = 5000
 
 
 bst = xgb.train(params, dtrain, num_rounds, evallist)
@@ -421,3 +428,54 @@ specificity = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
 list_xgb.append(metrics_xgb)
 
 pd.Series(xgb_pred).value_counts()
+
+############################################
+
+from sklearn.neighbors import KNeighborsClassifier
+
+list_knn = []
+
+knn = KNeighborsClassifier(n_neighbors = 5, weights='uniform', n_jobs=-1)
+
+knn.fit(X_train, y_train)
+
+knn_pred = knn.predict(X_test)
+
+metrics_knn = {}
+
+accuracy = accuracy_score(y_test, knn_pred)
+metrics_knn['accuracy'] = accuracy
+
+roc = roc_auc_score(y_test, knn_pred)
+metrics_knn['auc_roc'] = roc
+
+kappa = cohen_kappa_score(y_test, knn_pred)
+metrics_knn['kappa'] = kappa
+
+conf_matrix = confusion_matrix(y_test, knn_pred)
+metrics_knn['conf_matrix'] = conf_matrix
+
+list_knn.append(metrics_knn)
+
+pd.Series(knn_pred).value_counts()
+
+################################################
+
+from sklearn.svm import SVC
+
+list_svm = []
+
+svc = SVC(C=1, kernel='rbf', degree=3)
+
+svc.fit(X_train, y_train)
+
+svc_pred = svc.predict(X_test)
+
+metrics_svm = {}
+
+metrics_svm['accuracy'] = accuracy(y_test, svc_pred)
+metrics_svm['auc_roc'] = roc_auc_score(y_test, svc_pred)
+metrics_svm['kappa'] = cohen_kappa_score(y_test, svc_pred)
+metrics_svm['conf_matrix'] = confusion_matrix(y_test, svc_pred)
+
+list_svm.append(metrics_svm)

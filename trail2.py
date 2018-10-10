@@ -10,7 +10,6 @@ Created on Fri Oct  5 14:56:18 2018
 import numpy as np
 import pandas as pd
 
-from sklearn.preprocessing import LabelEncoder
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -18,27 +17,27 @@ warnings.filterwarnings('ignore')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.preprocessing import StandardScaler
-
+from sklearn.preprocessing import StandardScaler, PowerTransformer, MinMaxScaler, LabelEncoder
 from sklearn.metrics import accuracy_score, roc_auc_score, cohen_kappa_score, confusion_matrix
-
 from sklearn.model_selection import train_test_split
-
 from sklearn.utils import resample
+from sklearn.impute import SimpleImputer
+from sklearn.decomposition import PCA 
 
+#Progress bar
 from tqdm import tqdm
 tqdm.pandas(desc="progress-bar")
 
-from sklearn.preprocessing import Imputer
-
-from sklearn.decomposition import PCA    
+import gc
 
 
 
-def process_data(train_file, test_file, pca):
+def process_data(train_file, test_file, **kwargs):
     
-    #Only works on an IPython interpreter
-    %reset -f array
+    for key, value in kwargs.items():
+        key = key[value]
+    
+    gc.collect()
         
     train = pd.read_csv(train_file)
     test = pd.read_csv(test_file)
@@ -102,8 +101,11 @@ def process_data(train_file, test_file, pca):
     #Encoding categorical variables
     le = LabelEncoder()
     sc = StandardScaler()
+    pt = PowerTransformer()
+    mm = MinMaxScaler(feature_range=(-10,10))
     le_count = 0
     ohe_count = 0
+    scale_count = 0
     
     for col in tqdm(train.columns):
         if train[col].dtype == 'object':
@@ -136,25 +138,35 @@ def process_data(train_file, test_file, pca):
                 
         else:
             
-            #To suppress type conversion warnings
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
+            if "scale" in kwargs:
+                if kwargs.get("scale") == True:
                 
-                sc.fit(np.array(train[col]).reshape(-1,1))
-            
-                train[col] = sc.transform(np.array(train[col]).reshape(-1,1))
-                test[col] = sc.transform(np.array(test[col]).reshape(-1,1))
                 
+                    #To suppress type conversion warnings
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        
+                        sc.fit(np.array(train[col]).reshape(-1,1))
+                    
+                        train[col] = sc.transform(np.array(train[col]).reshape(-1,1))
+                        test[col] = sc.transform(np.array(test[col]).reshape(-1,1))
+                        
+                        scale_count += 1
+                        
+            else:
+                pass
+                    
             
-    print('%d categorical columns were label encoded' %le_count)
-    print('%d categorical columns were one-hot encoded' %ohe_count)
+    print('\n%d categorical predictors were label encoded' %le_count)
+    print('%d categorical predictors were one-hot encoded' %ohe_count)
+    print('%d numerical predictors were scaled \n' %scale_count)
     
     train = pd.concat([train, train_cats_encoded], axis = 1)
     test = pd.concat([test, test_cats_encoded], axis = 1)
         
     
     def imputer(train):
-        imputer = Imputer(strategy = 'median')
+        imputer = SimpleImputer(strategy = 'median')
         
         cols_train = [str(col) for col in train.columns]
         
@@ -166,7 +178,7 @@ def process_data(train_file, test_file, pca):
                 test[col] = imputer.transform(np.array(test[col]).reshape(-1,1))
                 imp_count += 1
                 
-        print('Missing values in %d columns were imputed' %imp_count)
+        print('\nMissing values in %d numerical predictors were imputed' %imp_count)
         
         
         return train, test
@@ -177,20 +189,17 @@ def process_data(train_file, test_file, pca):
     def compute_pca(df, n_comps):
         
         pca = PCA(n_components = n_comps, copy=True)        
+        df = pca.fit_transform(df)              
+        percent_var_explained = sum(pca.explained_variance_ratio_)*100
         
-        df = train.copy()        
-        del df['target']        
-        
-        df = pca.fit_transform(df)        
-        df = np.column_stack((df, np.array(response)))
-        
-        print(pca.explained_variance_ratio_)        
-        print(sum(pca.explained_variance_ratio_))
+        print('\n%d PCA components explain %d%% of the total variance in the original predictors' 
+              %(n_comps, percent_var_explained))
         
         return pd.DataFrame(df)
 
-    if pca == True:
-        train = compute_pca(train, 50)
+    if "pca" in kwargs:
+        if kwargs.get("pca") == True:
+            train = compute_pca(train, 100)
         
     return train, response
     
@@ -200,15 +209,9 @@ def process_data(train_file, test_file, pca):
 
 # Train test split   
 def data_split(train, response, imbalance_corr):
-
-#    try:
-#        del train['target']
-#    except KeyError:
-#        train['target'] = response
-#            
+         
     X_train, X_test, y_train, y_test = train_test_split(train, response,
                                                         test_size=0.1, random_state = 3536)
-    
     
     # Addressing class imbalance
     
@@ -233,5 +236,24 @@ def data_split(train, response, imbalance_corr):
 
 
 
-train, response = process_data("data_train.csv", "data_test.csv", pca=False)
-X_train, X_test, y_train, y_test = data_split(train, response, imbalance_corr=False)
+train, response = process_data("data_train.csv", "data_test.csv", pca=False, scale=True)
+X_train, X_test, y_train, y_test = data_split(train, response, imbalance_corr=True)
+
+plt.figure(figsize = (300,300))
+plt.matshow(train.corr())
+
+def plot_corr(df,size):
+    '''Function plots a graphical correlation matrix for each pair of columns in the dataframe.
+
+    Input:
+        df: pandas DataFrame
+        size: vertical and horizontal size of the plot'''
+
+    corr = df.corr()
+    fig, ax = plt.subplots(figsize=(size, size))
+    ax.matshow(corr)
+    plt.xticks(range(len(corr.columns)), corr.columns);
+    plt.yticks(range(len(corr.columns)), corr.columns);
+    
+
+plot_corr(train, size=100)
