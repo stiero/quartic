@@ -236,8 +236,7 @@ def data_split(train, response, imbalance_corr):
 
 
 
-<<<<<<< HEAD
-train, response = process_data("data_train.csv", "data_test.csv", pca=False, scale=True)
+train, response, test, test_ids = process_data("data_train.csv", "data_test.csv", pca=False, scale=True)
 X_train, X_test, y_train, y_test = data_split(train, response, imbalance_corr=True)
 
 plt.figure(figsize = (300,300))
@@ -258,7 +257,4 @@ def plot_corr(df,size):
     
 
 plot_corr(train, size=100)
-=======
-train, response, test, test_ids = process_data("data_train.csv", "data_test.csv", pca=False)
-X_train, X_test, y_train, y_test = data_split(train, response, imbalance_corr=False)
->>>>>>> 6fbed7245d9d48a78461961c7ff32163219f1daa
+
