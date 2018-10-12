@@ -31,25 +31,26 @@ params = {
         'gamma': [0.5, 1, 1.5, 2, 5],
         'subsample': [0.6, 0.8, 1.0],
         'colsample_bytree': [0.6, 0.8, 1.0],
-        'max_depth': [3, 4, 5]
+        'max_depth': [3, 4, 5],
+        'learning_rate': [0.001, 0.01, 0.1]
         }
 
 
 xgb = XGBClassifier(learning_rate=0.02, n_estimators=600, objective='binary:logistic',
                     silent=True, nthread=1)
 
-folds = 3
-param_comb = 5
+folds = 10
+param_comb = 30
 
 skf = StratifiedKFold(n_splits=folds, shuffle = True, random_state = 1001)
 
 random_search = RandomizedSearchCV(xgb, param_distributions=params, n_iter=param_comb, 
-                                   scoring='roc_auc', n_jobs=4, cv=skf.split(train, response), 
+                                   scoring='roc_auc', n_jobs=4, cv=skf.split(kbest_train, response), 
                                    verbose=3, random_state=1001 )
 
 start_time = timer(None)
 
-random_search.fit(train, response)
+random_search.fit(kbest_train, response)
 timer(start_time)
 
 
