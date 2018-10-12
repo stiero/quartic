@@ -28,14 +28,12 @@ from sklearn.decomposition import PCA
 from tqdm import tqdm
 tqdm.pandas(desc="progress-bar")
 
+#Garbage collection
 import gc
 
 
 
 def process_data(train_file, test_file, **kwargs):
-    
-    for key, value in kwargs.items():
-        key = key[value]
     
     gc.collect()
         
