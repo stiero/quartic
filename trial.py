@@ -388,8 +388,11 @@ dtest = xgb.DMatrix(X_test, label=y_test)
 params = {'max_depth': 2, 'eta': 0.5, 'silent': 0, 'objective': 'binary:logistic',
           'nthread': 4, 'eval_metric': 'auc', 'colsample_bytree': 0.8, 'subsample': 0.8, 
           'scale_pos_weight': 26, 'gamma': 200, 'learning_rate': 0.02}
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> bedb3b6f5f98c0cd9109d03e62f4f34b135d03a1
 
 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
@@ -481,3 +484,9 @@ metrics_svm['kappa'] = cohen_kappa_score(y_test, svc_pred)
 metrics_svm['conf_matrix'] = confusion_matrix(y_test, svc_pred)
 
 list_svm.append(metrics_svm)
+
+#################################################
+
+corrs = train.corr()
+s = corrs.unstack()
+so = s.sort_values(kind="quicksort", ascending=False)
