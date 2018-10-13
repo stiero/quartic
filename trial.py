@@ -388,14 +388,6 @@ dtest = xgb.DMatrix(X_test, label=y_test)
 params = {'max_depth': 2, 'eta': 0.5, 'silent': 0, 'objective': 'binary:logistic',
           'nthread': 4, 'eval_metric': 'auc', 'colsample_bytree': 0.8, 'subsample': 0.8, 
           'scale_pos_weight': 26, 'gamma': 200, 'learning_rate': 0.02}
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-
-=======
->>>>>>> bedb3b6f5f98c0cd9109d03e62f4f34b135d03a1
-=======
->>>>>>> 3b713baac2afdc91edc7d6c91c0394931ac97e94
 
 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
