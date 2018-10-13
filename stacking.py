@@ -236,14 +236,14 @@ params = {'max_depth': 2, 'eta': 0.5, 'silent': 0, 'objective': 'binary:logistic
 
 gnb = GaussianNB()
 
-rf = RandomForestClassifier(n_estimators = 5000, random_state = 50, verbose = 1,
+rf = RandomForestClassifier(n_estimators = 2000, random_state = 50, verbose = 1,
                                        n_jobs = -1, oob_score=True)
 
-lgb = LGBMClassifier(n_estimators=5000, objective='binary', class_weight='balanced',
+lgb = LGBMClassifier(n_estimators=2000, objective='binary', class_weight='balanced',
                      learning_rate=0.005, reg_alpha=0.5, reg_lambda=0.3, subsample=0.8,
                      n_jobs=-1, random_state=50)
 
-xgb = XGBClassifier(n_estimators=5000, **params)
+xgb = XGBClassifier(n_estimators=2000, **params)
 
 
 train_gnb = stacking(gnb, train = train, response = response, n_fold=10)

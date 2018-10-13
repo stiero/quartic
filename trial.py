@@ -473,7 +473,7 @@ svc_pred = svc.predict(X_test)
 
 metrics_svm = {}
 
-metrics_svm['accuracy'] = accuracy(y_test, svc_pred)
+metrics_svm['accuracy'] = accuracy_score(y_test, svc_pred)
 metrics_svm['auc_roc'] = roc_auc_score(y_test, svc_pred)
 metrics_svm['kappa'] = cohen_kappa_score(y_test, svc_pred)
 metrics_svm['conf_matrix'] = confusion_matrix(y_test, svc_pred)
@@ -485,3 +485,56 @@ list_svm.append(metrics_svm)
 corrs = train.corr()
 s = corrs.unstack()
 so = s.sort_values(kind="quicksort", ascending=False)
+
+###################################################
+
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+#from keras.wrappers.scikit_learn import KerasClassifier
+
+#from sklearn.pipeline import Pipeline
+
+seed =197
+
+list_nn = []
+
+model = Sequential()
+model.add(Dense(100, input_dim=203, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(1, activation = 'sigmoid'))
+
+model.compile(loss='binary_crossentropy', optimizer = 'adam', 
+              metrics = ['accuracy'])
+
+model.fit(X_train, y_train, epochs = 10, batch_size = 32)
+
+nn_pred = model.predict(X_test)
+
+threshold = 0.5
+
+nn_pred = nn_pred > threshold
+nn_pred = list(map(int, nn_pred))
+
+metrics_nn = {}
+
+metrics_nn['threshold'] = threshold
+metrics_nn['accuracy'] = accuracy_score(y_test, nn_pred)
+metrics_nn['auc_roc'] = roc_auc_score(y_test, nn_pred)
+metrics_nn['kappa'] = cohen_kappa_score(y_test, nn_pred)
+conf_matrix = confusion_matrix(y_test, nn_pred)
+metrics_nn['conf_matrix'] = conf_matrix
+metrics_nn['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_nn['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+list_nn.append(metrics_nn)
+
