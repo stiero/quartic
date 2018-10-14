@@ -13,13 +13,17 @@ from sklearn.naive_bayes import GaussianNB
 
 list_gnb = []
 
-metrics_gnb = {}
-
 gnb = GaussianNB()
 
 gnb.fit(X_train, y_train)
 
-gnb_pred = pd.Series(gnb.predict(X_test))
+gnb_pred_prob = gnb.predict_proba(X_test)[:,1]
+
+threshold = 0.5
+
+gnb_pred = gnb_pred_prob > threshold
+
+metrics_gnb = {}
 
 accuracy = accuracy_score(y_test, gnb_pred)
 metrics_gnb['accuracy'] = accuracy
@@ -33,6 +37,11 @@ metrics_gnb['kappa'] = kappa
 conf_matrix = confusion_matrix(y_test, gnb_pred)
 metrics_gnb['conf_matrix'] = conf_matrix
 
+metrics_gnb['threshold'] = threshold
+
+metrics_gnb['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_gnb['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
 list_gnb.append(metrics_gnb)
 
 #X_train['gnb_pred'] = gnb_pred
@@ -43,7 +52,6 @@ from sklearn.ensemble import RandomForestClassifier
 
 list_rf = []
 
-metrics_rf = {}
 
 rf = RandomForestClassifier(n_estimators = 5000, random_state = 50, verbose = 1,
                                        n_jobs = -1, oob_score=True)
@@ -54,8 +62,13 @@ rf.fit(X_train, y_train)
 
 feature_importance_values = rf.feature_importances_
 
-rf_pred = rf.predict(X_test)
-rf_pred = pd.Series(rf_pred)
+rf_pred_prob = rf.predict_proba(X_test)[:,1]
+
+threshold = 0.4
+
+rf_pred = rf_pred_prob > threshold
+
+metrics_rf = {}
 
 accuracy = accuracy_score(y_test, rf_pred)
 metrics_rf['accuracy'] = accuracy
@@ -70,6 +83,13 @@ conf_matrix = confusion_matrix(y_test, rf_pred)
 metrics_rf['conf_matrix'] = conf_matrix
 
 metrics_rf['oob_score'] = rf.oob_score_
+
+metrics_rf['threshold'] = threshold
+
+metrics_rf['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_rf['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+metrics_rf['feature_imp'] = feature_importance_values
 
 list_rf.append(metrics_rf)
 
@@ -95,11 +115,12 @@ num_rounds = 5000
 
 bst = xgb.train(params, dtrain, num_rounds, evallist)
 
-bst_pred = bst.predict(dtest)
+xgb_pred_prob = bst.predict(dtest)
 
-threshold = 0.5
+threshold = 0.4
 
-xgb_pred = bst_pred > threshold
+
+xgb_pred = xgb_pred_prob > threshold
 xgb_pred = np.multiply(xgb_pred, 1)
 
 xgb_pred = pd.Series(xgb_pred)
@@ -137,7 +158,6 @@ from lightgbm import LGBMClassifier
 
 list_lgb = []
 
-metrics_lgb = {}
 
 lgb = LGBMClassifier(n_estimators=5000, objective='binary', class_weight='balanced',
                      learning_rate=0.005, reg_alpha=0.5, reg_lambda=0.3, subsample=0.8,
@@ -145,12 +165,14 @@ lgb = LGBMClassifier(n_estimators=5000, objective='binary', class_weight='balanc
 
 lgb.fit(X_train, y_train, eval_metric='auc', verbose=True)
 
-lgb_pred = lgb.predict(X_test)
-#lgb_pred_prob = lgb.predict_proba(X_test)[:,1]
+#lgb_pred = lgb.predict(X_test)
+lgb_pred_prob = lgb.predict_proba(X_test)[:,1]
 
 threshold = 0.5
 
-#lgb_pred = lgb_pred_prob > threshold
+lgb_pred = lgb_pred_prob > threshold
+
+metrics_lgb = {}
 
 accuracy = accuracy_score(y_test, lgb_pred)
 metrics_lgb['accuracy'] = accuracy
@@ -164,28 +186,103 @@ metrics_lgb['kappa'] = kappa
 conf_matrix = confusion_matrix(y_test, lgb_pred)
 metrics_lgb['conf_matrix'] = conf_matrix
 
+metrics_lgb['threshold'] = threshold
+
+metrics_lgb['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_lgb['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+
 list_lgb.append(metrics_lgb)
 
 ###################################################
 
-from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
-list_svm = []
+list_knn = []
 
-svc = SVC(C=1, kernel='rbf', degree=3)
+knn = KNeighborsClassifier(n_neighbors = 5, weights='uniform', n_jobs=-1)
 
-svc.fit(X_train, y_train)
+knn.fit(X_train, y_train)
 
-svc_pred = svc.predict(X_test)
+knn_pred_prob = knn.predict_proba(X_test)[:,1]
 
-metrics_svm = {}
+threshold_knn = 0.1
 
-metrics_svm['accuracy'] = accuracy(y_test, svc_pred)
-metrics_svm['auc_roc'] = roc_auc_score(y_test, svc_pred)
-metrics_svm['kappa'] = cohen_kappa_score(y_test, svc_pred)
-metrics_svm['conf_matrix'] = confusion_matrix(y_test, svc_pred)
+knn_pred = knn_pred_prob > threshold_knn
 
-list_svm.append(metrics_svm)
+metrics_knn = {}
+
+accuracy = accuracy_score(y_test, knn_pred)
+metrics_knn['accuracy'] = accuracy
+    
+roc = roc_auc_score(y_test, knn_pred)
+metrics_knn['auc_roc'] = roc
+    
+kappa = cohen_kappa_score(y_test, knn_pred)
+metrics_knn['kappa'] = kappa
+
+conf_matrix = confusion_matrix(y_test, knn_pred)
+metrics_knn['conf_matrix'] = conf_matrix
+
+metrics_knn['threshold'] = threshold_knn
+
+metrics_knn['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_knn['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+
+list_knn.append(metrics_knn)
+
+######################################################
+
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+#from keras.wrappers.scikit_learn import KerasClassifier
+
+#from sklearn.pipeline import Pipeline
+
+seed =197
+
+list_nn = []
+
+model = Sequential()
+model.add(Dense(100, input_dim=203, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+#model.add(Dense(100, activation = 'relu'))
+#model.add(Dropout(0.5))
+model.add(Dense(1, activation = 'sigmoid'))
+
+model.compile(loss='binary_crossentropy', optimizer = 'adam', 
+              metrics = ['accuracy'])
+
+model.fit(X_train, y_train, epochs = 10, batch_size = 32)
+
+nn_pred_prob = model.predict(X_test)
+
+threshold = 0.4
+
+nn_pred = nn_pred > threshold
+nn_pred = list(map(int, nn_pred))
+
+metrics_nn = {}
+
+metrics_nn['threshold'] = threshold
+metrics_nn['accuracy'] = accuracy_score(y_test, nn_pred)
+metrics_nn['auc_roc'] = roc_auc_score(y_test, nn_pred)
+metrics_nn['kappa'] = cohen_kappa_score(y_test, nn_pred)
+conf_matrix = confusion_matrix(y_test, nn_pred)
+metrics_nn['conf_matrix'] = conf_matrix
+metrics_nn['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_nn['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+list_nn.append(metrics_nn)
 
 ########################################################
 
@@ -195,19 +292,28 @@ list_svm.append(metrics_svm)
 
 #ens.score(X_test, y_test)
 
-final_pred = np.array([])
-for i in range(len(X_test)):
-    final_pred = np.append(final_pred, mode([gnb_pred[i], rf_pred[i], 
-                                             xgb_pred[i], lgb_pred[i],
-                                             svc_pred[i]])[0].item())
-    
-
 list_final = []
 
-metrics_final = {}
+final_pred = np.array([])
+for i in tqdm(range(len(X_test))):
+    final_pred = np.append(final_pred, mode([gnb_pred[i], rf_pred[i], 
+                                             xgb_pred[i], lgb_pred[i],
+                                             nn_pred[i]])[0].item())
 
-metrics_final['num_rounds'] = num_rounds
-metrics_final['params'] = params
+
+final_pred_prob = np.array([])
+for i in tqdm(range(len(X_test))):
+    final_pred_prob = np.append(final_pred_prob, np.mean([gnb_pred_prob[i], rf_pred_prob[i], 
+                                             xgb_pred_prob[i], lgb_pred_prob[i],
+                                             nn_pred_prob[i]]))
+
+
+threshold = 0.3
+
+final_pred = final_pred_prob > threshold
+    
+
+metrics_final = {}
 
 accuracy = accuracy_score(y_test, final_pred)
 metrics_final['accuracy'] = accuracy
@@ -220,8 +326,6 @@ metrics_final['kappa'] = kappa
 
 conf_matrix = confusion_matrix(y_test, final_pred)
 metrics_final['conf_matrix'] = conf_matrix
-
-metrics_final['threshold'] = threshold
 
 metrics_final['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
 metrics_final['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
