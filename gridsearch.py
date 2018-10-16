@@ -79,10 +79,9 @@ print(random_search.best_score_ * 2 - 1)
 print('\n Best hyperparameters:')
 print(random_search.best_params_)
 results = pd.DataFrame(random_search.cv_results_)
-results.to_csv('xgb-random-grid-search-results-01.csv', index=False)
+results.to_csv('random-grid-search-results.csv', index=False)
 
 y_test = random_search.predict(test)
 test['id'] =  test_ids
-#results_df = pd.DataFrame(data={'id':test['id'], 'target':y_test[:,1]})
 results_df = pd.DataFrame(data={'id':test['id'], 'target':y_test})
-results_df.to_csv('submission-random-grid-search-xgb-porto-01.csv', index=False)
+results_df.to_csv('gridsearch_predictions.csv', index=False)

@@ -375,6 +375,8 @@ pd.Series(lgb_pred).value_counts()
 
 ########################################
 
+start_time = datetime.now()
+
 import xgboost as xgb
 
 list_xgb = []
@@ -387,12 +389,12 @@ dtest = xgb.DMatrix(X_test, label=y_test)
 
 params = {'max_depth': 2, 'eta': 0.5, 'silent': 0, 'objective': 'binary:logistic',
           'nthread': 4, 'eval_metric': 'auc', 'colsample_bytree': 0.8, 'subsample': 0.8, 
-          'scale_pos_weight': 26, 'gamma': 200, 'learning_rate': 0.02}
+          'scale_pos_weight': 1, 'gamma': 200, 'learning_rate': 0.02}
 
 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
 
-num_rounds = 5000
+num_rounds = 600
 
 
 bst = xgb.train(params, dtrain, num_rounds, evallist)
@@ -428,6 +430,8 @@ specificity = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
 list_xgb.append(metrics_xgb)
 
 pd.Series(xgb_pred).value_counts()
+
+time_taken = datetime.now() - start_time
 
 ############################################
 
@@ -516,11 +520,11 @@ model.add(Dense(1, activation = 'sigmoid'))
 model.compile(loss='binary_crossentropy', optimizer = 'adam', 
               metrics = ['accuracy'])
 
-model.fit(X_train, y_train, epochs = 10, batch_size = 32)
+model.fit(X_train, y_train, epochs = 100, batch_size = 32)
 
 nn_pred = model.predict(X_test)
 
-threshold = 0.5
+threshold = 0.4
 
 nn_pred = nn_pred > threshold
 nn_pred = list(map(int, nn_pred))
@@ -537,4 +541,36 @@ metrics_nn['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1
 metrics_nn['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
 
 list_nn.append(metrics_nn)
+
+#################################################
+
+from sklearn.ensemble import AdaBoostClassifier
+
+list_adb = []
+
+adb = AdaBoostClassifier(n_estimators = 500, learning_rate = 0.5,
+                         algorithm = "SAMME.R")
+
+adb.fit(X_train, y_train)
+
+adb_pred_prob = adb.predict_proba(X_test)[:,1]
+
+threshold = 0.5
+
+adb_pred = adb_pred_prob > threshold
+
+metrics_adb = {}
+
+metrics_adb['threshold'] = threshold
+metrics_adb['accuracy'] = accuracy_score(y_test, adb_pred)
+metrics_adb['auc_roc'] = roc_auc_score(y_test, adb_pred)
+metrics_adb['kappa'] = cohen_kappa_score(y_test, adb_pred)
+conf_matrix = confusion_matrix(y_test, adb_pred)
+metrics_adb['conf_matrix'] = conf_matrix
+metrics_adb['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_adb['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+list_adb.append(metrics_adb)
+
+#############################################
 

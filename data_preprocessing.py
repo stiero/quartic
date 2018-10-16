@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct  5 14:56:18 2018
+Created on Mon Oct 15 22:11:44 2018
 
-@author: ishippoml
+@author: tauro
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct  2 14:56:18 2018
+
+@author: tauro
 """
 
 
@@ -13,9 +21,6 @@ import pandas as pd
 
 import warnings
 warnings.filterwarnings('ignore')
-
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 from sklearn.preprocessing import StandardScaler, PowerTransformer, MinMaxScaler, LabelEncoder
 from sklearn.metrics import accuracy_score, roc_auc_score, cohen_kappa_score, confusion_matrix
@@ -31,11 +36,18 @@ tqdm.pandas(desc="progress-bar")
 #Garbage collection
 import gc
 
+import os
+owd = os.getcwd()
+
+
+
 
 
 def process_data(train_file, test_file, **kwargs):
     
     gc.collect()
+    
+    os.chdir("./data")
         
     train = pd.read_csv(train_file)
     test = pd.read_csv(test_file)
@@ -85,7 +97,7 @@ def process_data(train_file, test_file, **kwargs):
     train = cat_cols_to_object(train)
     test = cat_cols_to_object(test)
     
-    #Number of unique classes in each object predictor
+    #Number of unique classes in each feature of 'object' type
     train.select_dtypes('object').apply(pd.Series.nunique, axis = 0).sum()
     test.select_dtypes('object').apply(pd.Series.nunique, axis = 0)
     
@@ -104,6 +116,8 @@ def process_data(train_file, test_file, **kwargs):
     le_count = 0
     ohe_count = 0
     scale_count = 0
+    
+    print("\nEncoding features\n")
     
     for col in tqdm(train.columns):
         if train[col].dtype == 'object':
@@ -155,9 +169,9 @@ def process_data(train_file, test_file, **kwargs):
                 pass
                     
             
-    print('\n%d categorical predictors were label encoded' %le_count)
-    print('%d categorical predictors were one-hot encoded' %ohe_count)
-    print('%d numerical predictors were scaled \n' %scale_count)
+    print('\n%d categorical features were label encoded' %le_count)
+    print('%d categorical features were one-hot encoded' %ohe_count)
+    print('%d numerical features were scaled \n' %scale_count)
     
     train = pd.concat([train, train_cats_encoded], axis = 1)
     test = pd.concat([test, test_cats_encoded], axis = 1)
@@ -170,13 +184,15 @@ def process_data(train_file, test_file, **kwargs):
         
         imp_count = 0
         
+        print("\nImputing missing values\n")
+        
         for col in tqdm(cols_train):
             if "num" in col:
                 train[col] = imputer.fit_transform(np.array(train[col]).reshape(-1,1))
                 test[col] = imputer.transform(np.array(test[col]).reshape(-1,1))
                 imp_count += 1
                 
-        print('\nMissing values in %d numerical predictors were imputed' %imp_count)
+        print('\nMissing values in %d numerical features were imputed\n' %imp_count)
         
         
         return train, test
@@ -190,7 +206,7 @@ def process_data(train_file, test_file, **kwargs):
         df = pca.fit_transform(df)              
         percent_var_explained = sum(pca.explained_variance_ratio_)*100
         
-        print('\n%d PCA components explain %d%% of the total variance in the original predictors' 
+        print('\n%d PCA components explain %d%% of the total variance in the original features\n' 
               %(n_comps, percent_var_explained))
         
         return pd.DataFrame(df)
@@ -198,6 +214,8 @@ def process_data(train_file, test_file, **kwargs):
     if "pca" in kwargs:
         if kwargs.get("pca") == True:
             train = compute_pca(train, 100)
+            
+    os.chdir(owd)
         
     return train, response, test, test_ids
     
@@ -209,6 +227,12 @@ def process_data(train_file, test_file, **kwargs):
 def data_split(train, response, imbalance_corr):
     
     gc.collect()
+    
+    os.chdir("./data")
+    
+    train, response, test, test_ids = process_data("data_train.csv", "data_test.csv", 
+                                                   pca=False, scale=True)
+
          
     X_train, X_test, y_train, y_test = train_test_split(train, response,
                                                         test_size=0.1)
@@ -232,29 +256,7 @@ def data_split(train, response, imbalance_corr):
     
     del train
     
-    return X_train, X_test, y_train, y_test
-
-
-
-train, response, test, test_ids = process_data("data_train.csv", "data_test.csv", pca=False, scale=True)
-X_train, X_test, y_train, y_test = data_split(train, response, imbalance_corr=True)
-
-plt.figure(figsize = (300,300))
-plt.matshow(train.corr())
-
-def plot_corr(df,size):
-    '''Function plots a graphical correlation matrix for each pair of columns in the dataframe.
-
-    Input:
-        df: pandas DataFrame
-        size: vertical and horizontal size of the plot'''
-
-    corr = df.corr()
-    fig, ax = plt.subplots(figsize=(size, size))
-    ax.matshow(corr)
-    plt.xticks(range(len(corr.columns)), corr.columns);
-    plt.yticks(range(len(corr.columns)), corr.columns);
+    os.chdir(owd)
     
-
-plot_corr(train, size=100)
+    return X_train, X_test, y_train, y_test
 
