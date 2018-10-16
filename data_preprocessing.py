@@ -43,11 +43,13 @@ owd = os.getcwd()
 
 
 
-def process_data(train_file, test_file, **kwargs):
+def process_data(train_file, test_file, imbalance_corr = True, **kwargs):
     
     gc.collect()
     
-    os.chdir("./data")
+    #os.chdir("./data")
+    
+    print("\nCommencing data loading and preprocessing\n")
         
     train = pd.read_csv(train_file)
     test = pd.read_csv(test_file)
@@ -82,6 +84,10 @@ def process_data(train_file, test_file, **kwargs):
     missing_train = missing_values(train)
     missing_test = missing_values(test)
     
+    print("The training data has %d features with missing observations" % len(missing_train))
+    print("The test data has %d features with missing observations" % len(missing_test))
+
+    
 
     train.dtypes
     
@@ -98,8 +104,8 @@ def process_data(train_file, test_file, **kwargs):
     test = cat_cols_to_object(test)
     
     #Number of unique classes in each feature of 'object' type
-    train.select_dtypes('object').apply(pd.Series.nunique, axis = 0).sum()
-    test.select_dtypes('object').apply(pd.Series.nunique, axis = 0)
+    train_unique_classes = train.select_dtypes('object').apply(pd.Series.nunique, axis = 0)
+    test_unique_classes = test.select_dtypes('object').apply(pd.Series.nunique, axis = 0)
     
     missing_cats_train = missing_values(train.filter(regex='cat'))
     missing_cats_test = missing_values(test.filter(regex='cat'))
@@ -112,12 +118,14 @@ def process_data(train_file, test_file, **kwargs):
     le = LabelEncoder()
     sc = StandardScaler()
     pt = PowerTransformer()
+    
+    print("\nEncoding features\n")
+    
     mm = MinMaxScaler(feature_range=(-10,10))
     le_count = 0
     ohe_count = 0
     scale_count = 0
     
-    print("\nEncoding features\n")
     
     for col in tqdm(train.columns):
         if train[col].dtype == 'object':
@@ -178,13 +186,15 @@ def process_data(train_file, test_file, **kwargs):
         
     
     def imputer(train):
+        
         imputer = SimpleImputer(strategy = 'median')
+        
+        print("\nImputing missing values in numerical features using their median\n")
         
         cols_train = [str(col) for col in train.columns]
         
         imp_count = 0
         
-        print("\nImputing missing values\n")
         
         for col in tqdm(cols_train):
             if "num" in col:
@@ -214,8 +224,30 @@ def process_data(train_file, test_file, **kwargs):
     if "pca" in kwargs:
         if kwargs.get("pca") == True:
             train = compute_pca(train, 100)
+    
+        
+    # Addressing class imbalance
+    if imbalance_corr == True:
+    
+        train['target'] = response
+        
+        train_maj = train[train['target'] == 0]
+        train_min = train[train['target'] == 1]
+        
+        train_min_sampled = resample(train_min, replace = True,
+                                     n_samples = len(train_maj))
+        
+        train = pd.concat([train_maj, train_min_sampled])
+        
+        response = train['target']
+        del train['target']
+        
+        print("\nAfter adjusting for class imbalance, the the train data dimension is %s\n"
+              % (train.shape,))
             
     os.chdir(owd)
+    
+    print("\nData loading and preprocessing completed\n")
         
     return train, response, test, test_ids
     
@@ -223,36 +255,16 @@ def process_data(train_file, test_file, **kwargs):
     
 
 
-# Train test split   
-def data_split(train, response, imbalance_corr):
+# Train test split for training purposes
+def data_split(train, response):
     
     gc.collect()
     
-    os.chdir("./data")
-    
-    train, response, test, test_ids = process_data("data_train.csv", "data_test.csv", 
-                                                   pca=False, scale=True)
-
+    #os.chdir("./data")
          
     X_train, X_test, y_train, y_test = train_test_split(train, response,
                                                         test_size=0.1)
     
-    # Addressing class imbalance
-    
-    if imbalance_corr == True:
-    
-        X_train['target'] = y_train
-        
-        train_maj = X_train[X_train['target'] == 0]
-        train_min = X_train[X_train['target'] == 1]
-        
-        train_min_sampled = resample(train_min, replace = True,
-                                     n_samples = len(train_maj))
-        
-        X_train = pd.concat([train_maj, train_min_sampled])
-        
-        y_train = X_train['target']
-        del X_train['target']
     
     del train
     

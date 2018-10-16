@@ -53,7 +53,7 @@ owd = os.getcwd()
 
 
 train, response, test, test_ids = process_data("data_train.csv", "data_test.csv", 
-                                               pca=False, scale=True)
+                                               pca=False, scale=True, imbalance_corr=True)
 
 
 
@@ -62,7 +62,7 @@ train, response, test, test_ids = process_data("data_train.csv", "data_test.csv"
 
 gc.collect()
 
-print("\nTraining a Gaussian Naive Bayes classifier - Model 1 of 5\n")
+print("\nTraining Gaussian Naive Bayes classifier - Model 1 of 5\n")
 
 gnb = GaussianNB()
 
@@ -144,7 +144,51 @@ threshold_adb = 0.5
 
 adb_pred = adb_pred_prob > threshold_adb
 
+##############################################################################
 
+from sklearn.ensemble import RandomForestClassifier
+
+list_rf = []
+
+rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
+                                       n_jobs = -1, oob_score=True)
+
+#del train['target']
+
+rf.fit(train, response)
+
+feature_importance_values = rf.feature_importances_
+
+rf_pred_prob = rf.predict_proba(X_test)[:,1]
+
+threshold = 0.5
+
+rf_pred = rf_pred_prob > threshold
+
+metrics_rf = {}
+
+accuracy = accuracy_score(response, rf_pred)
+metrics_rf['accuracy'] = accuracy
+    
+roc = roc_auc_score(response, rf_pred)
+metrics_rf['auc_roc'] = roc
+    
+kappa = cohen_kappa_score(response, rf_pred)
+metrics_rf['kappa'] = kappa
+
+conf_matrix = confusion_matrix(response, rf_pred)
+metrics_rf['conf_matrix'] = conf_matrix
+
+metrics_rf['oob_score'] = rf.oob_score_
+
+metrics_rf['threshold'] = threshold
+
+metrics_rf['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_rf['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+metrics_rf['feature_imp'] = feature_importance_values
+
+list_rf.append(metrics_rf)
 
 # =============================================================================
 # Model 5 - Multilayer Perceptron Neural Network Classifier
@@ -187,7 +231,7 @@ nn_pred = nn_pred_prob > threshold_nn
 
 final_pred = np.array([])
 
-print("\nEach trained model has a vote on every test observation\n")
+print("\nEach trained model has a vote on every test observation. The majority prediction wins\n")
 
 for i in tqdm(range(len(test))):
     final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i],
