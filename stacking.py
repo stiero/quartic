@@ -10,10 +10,11 @@ from datetime import datetime
 
 start_time = datetime.now()
 
-#from sklearn.ensemble import VotingClassifier
 from scipy.stats import mode
 
 from sklearn.naive_bayes import GaussianNB
+
+gc.collect()
 
 list_gnb = []
 
@@ -52,54 +53,64 @@ list_gnb.append(metrics_gnb)
 
 ########################################################
 
-from sklearn.ensemble import RandomForestClassifier
-
-list_rf = []
-
-
-rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
-                                       n_jobs = -1, oob_score=True)
-
-#del train['target']
-
-rf.fit(X_train, y_train)
-
-feature_importance_values = rf.feature_importances_
-
-rf_pred_prob = rf.predict_proba(X_test)[:,1]
-
-threshold = 0.5
-
-rf_pred = rf_pred_prob > threshold
-
-metrics_rf = {}
-
-accuracy = accuracy_score(y_test, rf_pred)
-metrics_rf['accuracy'] = accuracy
-    
-roc = roc_auc_score(y_test, rf_pred)
-metrics_rf['auc_roc'] = roc
-    
-kappa = cohen_kappa_score(y_test, rf_pred)
-metrics_rf['kappa'] = kappa
-
-conf_matrix = confusion_matrix(y_test, rf_pred)
-metrics_rf['conf_matrix'] = conf_matrix
-
-metrics_rf['oob_score'] = rf.oob_score_
-
-metrics_rf['threshold'] = threshold
-
-metrics_rf['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
-metrics_rf['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
-
-metrics_rf['feature_imp'] = feature_importance_values
-
-list_rf.append(metrics_rf)
+#from sklearn.ensemble import RandomForestClassifier
+#
+#start_time = datetime.now()
+#
+#list_rf = []
+#
+#
+#rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
+#                                       n_jobs = -1, oob_score=True)
+#
+##del train['target']
+#
+#rf.fit(X_train, y_train)
+#
+#feature_importance_values = rf.feature_importances_
+#
+#rf_pred_prob = rf.predict_proba(X_test)[:,1]
+#
+#threshold = 0.5
+#
+#rf_pred = rf_pred_prob > threshold
+#
+#metrics_rf = {}
+#
+#accuracy = accuracy_score(y_test, rf_pred)
+#metrics_rf['accuracy'] = accuracy
+#    
+#roc = roc_auc_score(y_test, rf_pred)
+#metrics_rf['auc_roc'] = roc
+#    
+#kappa = cohen_kappa_score(y_test, rf_pred)
+#metrics_rf['kappa'] = kappa
+#
+#conf_matrix = confusion_matrix(y_test, rf_pred)
+#metrics_rf['conf_matrix'] = conf_matrix
+#
+#metrics_rf['oob_score'] = rf.oob_score_
+#
+#metrics_rf['threshold'] = threshold
+#
+#metrics_rf['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+#metrics_rf['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+#
+#metrics_rf['feature_imp'] = feature_importance_values
+#
+#list_rf.append(metrics_rf)
+#
+#end_time = datetime.now()
+#
+#time_taken = end_time - start_time
+#
+#print(time_taken)
 
 #########################################################
 
 import xgboost as xgb
+
+gc.collect()
 
 list_xgb = []
 
@@ -159,6 +170,8 @@ list_xgb.append(metrics_xgb)
 
 from lightgbm import LGBMClassifier
 
+gc.collect()
+
 list_lgb = []
 
 
@@ -202,7 +215,8 @@ list_lgb.append(metrics_lgb)
 ###################################################
 
 from sklearn.ensemble import AdaBoostClassifier
-start_time = datetime.now()
+
+gc.collect()
 
 list_adb = []
 
@@ -240,9 +254,6 @@ metrics_adb['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[
 
 list_adb.append(metrics_adb)
 
-time_taken = datetime.now() - start_time
-
-print(time_taken)
 
 
 ###################################################
@@ -293,9 +304,8 @@ print(time_taken)
 
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
-#from keras.wrappers.scikit_learn import KerasClassifier
 
-#from sklearn.pipeline import Pipeline
+gc.collect()
 
 seed =197
 
@@ -325,7 +335,7 @@ nn_pred_prob = model.predict(X_test)
 
 threshold = 0.4
 
-nn_pred = nn_pred > threshold
+nn_pred = nn_pred_prob > threshold
 nn_pred = list(map(int, nn_pred))
 
 metrics_nn = {}
@@ -354,18 +364,18 @@ list_final = []
 final_pred = np.array([])
 for i in tqdm(range(len(X_test))):
     final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i],
-                                             nn_pred[i]])[0].item())
+                                             adb_pred[i], nn_pred[i]])[0].item())
 
 
 #final_pred_prob = np.array([])
 #for i in tqdm(range(len(X_test))):
-#    final_pred_prob = np.append(final_pred_prob, np.mean([gnb_pred_prob[i], rf_pred_prob[i], 
-#                                             xgb_pred_prob[i], lgb_pred_prob[i],
-#                                             nn_pred_prob[i]]))
+#    final_pred_prob = np.append(final_pred_prob, np.mean([gnb_pred_prob[i], xgb_pred_prob[i], 
+#                                                          lgb_pred_prob[i], adb_pred_prob[i], 
+#                                                          nn_pred_prob[i]]))
 #
 #
-#threshold = 0.3
-
+#threshold = 0.4
+#
 #final_pred = final_pred_prob > threshold
     
 
@@ -388,7 +398,7 @@ metrics_final['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matri
 
 list_final.append(metrics_final)
 
-end_time = datetime.npw()
+end_time = datetime.now()
 
 time_taken = end_time - start_time
 

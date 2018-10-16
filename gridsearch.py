@@ -60,7 +60,7 @@ param_comb = 10
 
 skf = StratifiedKFold(n_splits=folds, shuffle = True, random_state = 1001)
 
-random_search = RandomizedSearchCV(rf, param_distributions=params_rf, n_iter=param_comb, 
+random_search = RandomizedSearchCV(xgb, param_distributions=params_xgb, n_iter=param_comb, 
                                    scoring='roc_auc', n_jobs=4, cv=skf.split(train, response), 
                                    verbose=3, random_state=1001 )
 
@@ -79,10 +79,9 @@ print(random_search.best_score_ * 2 - 1)
 print('\n Best hyperparameters:')
 print(random_search.best_params_)
 results = pd.DataFrame(random_search.cv_results_)
-results.to_csv('xgb-random-grid-search-results-01.csv', index=False)
+results.to_csv('random-grid-search-results.csv', index=False)
 
 y_test = random_search.predict(test)
 test['id'] =  test_ids
-#results_df = pd.DataFrame(data={'id':test['id'], 'target':y_test[:,1]})
 results_df = pd.DataFrame(data={'id':test['id'], 'target':y_test})
-results_df.to_csv('submission-random-grid-search-xgb-porto-01.csv', index=False)
+results_df.to_csv('gridsearch_predictions.csv', index=False)
