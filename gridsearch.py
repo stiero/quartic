@@ -56,11 +56,11 @@ xgb = XGBClassifier(learning_rate=0.02, n_estimators=600, objective='binary:logi
                     silent=True, nthread=-1)
 
 folds = 10
-param_comb = 10
+param_comb = 20
 
 skf = StratifiedKFold(n_splits=folds, shuffle = True, random_state = 1001)
 
-random_search = RandomizedSearchCV(rf, param_distributions=params_rf, n_iter=param_comb, 
+random_search = RandomizedSearchCV(xgb, param_distributions=params_xgb, n_iter=param_comb, 
                                    scoring='roc_auc', n_jobs=4, cv=skf.split(train, response), 
                                    verbose=3, random_state=1001 )
 

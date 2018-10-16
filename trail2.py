@@ -209,7 +209,7 @@ def process_data(train_file, test_file, **kwargs):
 def data_split(train, response, imbalance_corr):
          
     X_train, X_test, y_train, y_test = train_test_split(train, response,
-                                                        test_size=0.1, random_state = 3536)
+                                                        test_size=0.1)
     
     # Addressing class imbalance
     
@@ -221,7 +221,7 @@ def data_split(train, response, imbalance_corr):
         train_min = X_train[X_train['target'] == 1]
         
         train_min_sampled = resample(train_min, replace = True,
-                                     n_samples = len(train_maj), random_state = 9868)
+                                     n_samples = len(train_maj))
         
         X_train = pd.concat([train_maj, train_min_sampled])
         
