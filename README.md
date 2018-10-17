@@ -52,11 +52,14 @@ source activate your_env_name
 - After running a (very) lengthy grid search over several nights, the best individual model I could train had an ROC AUC of 0.62. I used AUC as the primary metric to gauge model performance because plain accuracy is blind to the sensitivity-specificity tradeoff. 
 - For the final majority voting classification, I trained a total of 6 classification models. They include Logistic regression, Random Forest, XGBoost, Adaptive Boost, Light Gradient Boosting Machines and Multilayer Perceptron neural network. 
 - Through majority voting, I finally arrived at the following metrics on the validation split -
-- Accuracy = 73%
-ROC AUC = 0.73
-Cohen's kappa = 0.46
-Sensitivity = 0.85
-Specificity = 0.61 
+
+| Metric | Value |
+| ------ | ------ |
+| Accuracy | 73.4% |
+| ROC AUC | 0.73 |
+| Cohen's kappa | 0.46 |
+| Sensitivity | 0.85 |
+| Specificity |  0.61 |
 
 ### 3) Further improvements
 - If I had more time, I would first try and do a more thorough grid search for the optimal parameters for the models already trained to increase overall accuracy. 
