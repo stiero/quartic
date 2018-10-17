@@ -20,7 +20,7 @@ from sklearn.utils import resample
 from sklearn.impute import SimpleImputer
 from sklearn.decomposition import PCA 
 from sklearn.naive_bayes import GaussianNB
-from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 
 from datetime import datetime
 import os
@@ -81,7 +81,7 @@ gnb_pred = gnb_pred_prob > threshold_gnb
 
 gc.collect()
 
-print("\nTraining XG Boost classifier - Model 2 of 5\n")
+print("\nTraining XG Boost classifier - Model 2 of 6\n")
 
 dtrain = xgb.DMatrix(train, label=response)
 
@@ -105,11 +105,40 @@ xgb_pred = xgb_pred_prob > threshold_xgb
 
 
 # =============================================================================
-# Model 3 - Light Gradient Boosting Machine Classifier 
+# Model 3 - Random Forest Classifier
 
 gc.collect()
 
-print("\nTraining LGBM classifier - Model 3 of 5\n")
+print("\nTraining Random Forest classifier - Model 3 of 6\n")
+
+
+list_rf = []
+
+rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
+                                       n_jobs = -1, oob_score=True)
+
+rf.fit(train, response)
+
+feature_imp = list(rf.feature_importances_)
+
+feature_importance_values = pd.DataFrame({"importance": sorted(feature_imp, reverse = True)},
+                                          index=X_train.columns)
+
+print("/nAs per the Random Forest Classifier, the 50 most important features are")
+feature_importance_values.iloc[:51,]
+
+rf_pred_prob = rf.predict_proba(test)[:,1]
+
+threshold_rf = 0.5
+
+rf_pred = rf_pred_prob > threshold_rf
+
+# =============================================================================
+# Model 4 - Light Gradient Boosting Machine Classifier 
+
+gc.collect()
+
+print("\nTraining LGBM classifier - Model 4 of 6\n")
 
 lgb = LGBMClassifier(n_estimators=500, objective='binary', class_weight='balanced',
                      learning_rate=0.005, reg_alpha=0.5, reg_lambda=0.3, subsample=0.8,
@@ -126,11 +155,11 @@ lgb_pred = lgb_pred_prob > threshold_lgb
 
 
 # =============================================================================
-# Model 4 - Adaptive Boosting Classifier
+# Model 5 - Adaptive Boosting Classifier
 
 gc.collect()
 
-print("\nTraining AdaBoost classifier - Model 4 of 5\n")
+print("\nTraining AdaBoost classifier - Model 5 of 6\n")
 
 list_adb = []
 
@@ -147,11 +176,11 @@ adb_pred = adb_pred_prob > threshold_adb
 
 
 # =============================================================================
-# Model 5 - Multilayer Perceptron Neural Network Classifier
+# Model 6 - Multilayer Perceptron Neural Network Classifier
 
 gc.collect()
 
-print("\nTraining MLP classifier - Model 5 of 5\n")
+print("\nTraining MLP classifier - Model 6 of 6\n")
 
 model = Sequential()
 model.add(Dense(100, input_dim=203, activation = 'relu'))
@@ -191,7 +220,7 @@ print("\nEach trained model has a vote on every test observation. The majority p
 
 for i in tqdm(range(len(test))):
     final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i],
-                                             nn_pred[i]])[0].item())
+                                             nn_pred[i], adb_pred[i], rf_pred[i]])[0].item())
 
 final_pred = pd.DataFrame(final_pred, index = test_ids)
 

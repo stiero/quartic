@@ -42,6 +42,7 @@ from lightgbm import LGBMClassifier
 
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
+from keras.models import load_model
 
 #Custom file for data loading and preprocessing
 from data_preprocessing import process_data, data_split
@@ -70,7 +71,7 @@ print("\nTraining a Gaussian Naive Bayes classifier - Model 1 of 5\n")
 
 list_gnb = []
 
-gnb = pickle.load(open("gnb.pkl", 'rb'))
+gnb = pickle.load(open(owd+"/models/gnb.pkl", 'rb'))
 
 gnb_pred_prob = gnb.predict_proba(X_test)[:,1]
 
@@ -123,7 +124,7 @@ evallist = [(dtest, 'eval'), (dtrain, 'train')]
 num_rounds = 500
 
 
-bst = pickle.load(open("xgb.pkl", 'rb'))
+bst = pickle.load(open(owd+"/models/xgb.pkl", 'rb'))
 xgb_pred_prob = bst.predict(dtest)
 
 threshold_xgb = 0.5
@@ -166,7 +167,7 @@ gc.collect()
 
 list_lr = []
 
-lr = pickle.load(open("lr.pkl", 'rb'))
+lr = pickle.load(open(owd+"/models/lr.pkl", 'rb'))
 
 lr_pred_prob = lr.predict_proba(X_test)[:,1]
 
@@ -254,7 +255,7 @@ print("\nTraining LGBM classifier - Model 3 of 5\n")
 
 list_lgb = []
 
-lgb = pickle.load(open("lgb.pkl", 'rb'))
+lgb = pickle.load(open(owd+"/models/lgb.pkl", 'rb'))
 
 lgb_pred_prob = lgb.predict_proba(X_test)[:,1]
 
@@ -296,7 +297,7 @@ print("\nTraining AdaBoost classifier - Model 4 of 5\n")
 
 list_adb = []
 
-adb = pickle.load(open("adb.pkl", 'rb'))
+adb = pickle.load(open(owd+"/models/adb.pkl", 'rb'))
 
 adb_pred_prob = adb.predict_proba(X_test)[:,1]
 
@@ -340,7 +341,7 @@ print("\nTraining MLP classifier - Model 5 of 5\n")
 
 list_nn = []
 
-model = load_model("nn.h5")
+model = load_model(owd+"/models/nn.h5")
 
 nn_pred_prob = model.predict(X_test)
 
