@@ -205,7 +205,7 @@ model.fit(train, response, epochs = 10, batch_size = 32)
 
 nn_pred_prob = model.predict(test)
 
-threshold_nn = 0.4
+threshold_nn = 0.5
 
 nn_pred = nn_pred_prob > threshold_nn
 
@@ -222,7 +222,7 @@ for i in tqdm(range(len(test))):
     final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i],
                                              nn_pred[i], adb_pred[i], rf_pred[i]])[0].item())
 
-final_pred = pd.DataFrame(final_pred, index = test_ids)
+final_pred = pd.DataFrame({"id": test_ids, "target": final_pred})
 
 
 final_pred.to_csv("voting_ensemble_predictions.csv", index=True) 

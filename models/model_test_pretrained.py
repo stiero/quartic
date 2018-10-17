@@ -127,7 +127,7 @@ num_rounds = 500
 bst = pickle.load(open(owd+"/models/xgb.pkl", 'rb'))
 xgb_pred_prob = bst.predict(dtest)
 
-threshold_xgb = 0.5
+threshold_xgb = 0.4
 
 
 xgb_pred = xgb_pred_prob > threshold_xgb
@@ -216,7 +216,7 @@ feature_importance_values = rf.feature_importances_
 
 rf_pred_prob = rf.predict_proba(X_test)[:,1]
 
-threshold_rf = 0.5
+threshold_rf = 0.4
 
 rf_pred = rf_pred_prob > threshold_rf
 
@@ -301,7 +301,7 @@ adb = pickle.load(open(owd+"/models/adb.pkl", 'rb'))
 
 adb_pred_prob = adb.predict_proba(X_test)[:,1]
 
-threshold_adb = 0.5
+threshold_adb = 0.4
 
 adb_pred = adb_pred_prob > threshold_adb
 
