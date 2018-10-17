@@ -1,3 +1,6 @@
+
+# Function to plot the ROC curve
+
 from sklearn import metrics
 
 fpr, tpr, threshold = metrics.roc_curve(y_test, xgb_pred)
