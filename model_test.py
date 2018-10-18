@@ -353,6 +353,40 @@ metrics_nn['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0
 list_nn.append(metrics_nn)
 
 
+# =============================================================================
+
+# Discriminant analysis
+
+list_qda = []
+
+qda = QuadraticDiscriminantAnalysis(reg_param=0.0001, tol=0.0001)
+
+qda.fit(X_train, y_train)
+
+qda_pred_prob = qda.predict_proba(X_test)[:,1]
+
+threshold_qda = 0.0001
+
+qda_pred = qda_pred_prob > threshold_qda
+
+metrics_qda = {}
+
+metrics_qda['params'] = str(qda.get_params)
+metrics_qda['threshold'] = threshold_qda
+accuracy = accuracy_score(y_test, qda_pred)
+metrics_qda['accuracy'] = accuracy
+roc = roc_auc_score(y_test, qda_pred)
+metrics_qda['auc_roc'] = roc
+kappa = cohen_kappa_score(y_test, qda_pred)
+metrics_qda['kappa'] = kappa
+conf_matrix = confusion_matrix(y_test, qda_pred)
+metrics_qda['conf_matrix'] = conf_matrix
+metrics_qda['threshold'] = threshold_qda
+metrics_qda['sensitivity'] = conf_matrix[1,1] / (conf_matrix[1,1] + conf_matrix[1,0])
+metrics_qda['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0,0])
+
+list_qda.append(metrics_qda)
+
 
 # =============================================================================
 # Combine all the trained models by voting 
@@ -365,7 +399,8 @@ print("\nEach trained model has a vote on every test observation\n")
 
 for i in tqdm(range(len(X_test))):
     final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i],
-                                             adb_pred[i], rf_pred[i], nn_pred[i]])[0].item())
+                                             adb_pred[i], rf_pred[i], nn_pred[i],
+                                             qda_pred[i]])[0].item())
 
 metrics_final = {}
 
