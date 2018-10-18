@@ -208,7 +208,6 @@ list_rf = []
 rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
                                        n_jobs = -1, oob_score=True)
 
-#del train['target']
 
 rf.fit(X_train, y_train)
 
