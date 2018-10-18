@@ -22,6 +22,7 @@ from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.externals import joblib
 
 from datetime import datetime
 import os
@@ -60,6 +61,41 @@ train, response, test, test_ids = process_data("data_train.csv", "data_test.csv"
                                                pca=False, scale=True)
 
 
+
+
+
+
+
+
+
+# =============================================================================
+# Model 4 - Random Forest classifier 
+
+gc.collect()
+
+print(""""
+      =============================================================================
+      \nTraining a Random Forest classifier - Model 4 of 7\n
+      """)
+
+rf = joblib.load("rf.joblib")
+
+
+rf.fit(train, response)
+
+feature_importance_values = rf.feature_importances_
+
+rf_pred_prob = rf.predict_proba(test)[:,1]
+
+threshold_rf = 0.4
+
+rf_pred = rf_pred_prob > threshold_rf
+
+#joblib.dump(rf, "rf.joblib", compress=6)
+
+print("Done")
+del rf
+
 # =============================================================================
 # Model 1 - Gaussian Naive Bayes classifier
 
@@ -77,6 +113,8 @@ gnb_pred_prob = gnb.predict_proba(test)[:,1]
 threshold_gnb = 0.3
 
 gnb_pred = gnb_pred_prob > threshold_gnb
+
+del gnb
  
 
 # =============================================================================
@@ -111,7 +149,8 @@ threshold_xgb = 0.4
 
 xgb_pred = xgb_pred_prob > threshold_xgb
 
-
+print("Done")
+del bst
 
 # =============================================================================
 # Model 3 - Logistic Regression classifier 
@@ -131,32 +170,11 @@ threshold_lr = 0.5
 
 lr_pred = lr_pred_prob > threshold_lr
 
+print("Done")
+del lr
 
 
 # =============================================================================
-# Model 4 - Random Forest classifier 
-
-gc.collect()
-
-print(""""
-      =============================================================================
-      \nTraining a Random Forest classifier - Model 4 of 7\n
-      """)
-
-rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
-                                       n_jobs = -1, oob_score=True)
-
-
-rf.fit(train, response)
-
-feature_importance_values = rf.feature_importances_
-
-rf_pred_prob = rf.predict_proba(test)[:,1]
-
-threshold_rf = 0.4
-
-rf_pred = rf_pred_prob > threshold_rf
-
 
 
 # =============================================================================
@@ -176,7 +194,8 @@ threshold_lgb = 0.4
 
 lgb_pred = lgb_pred_prob > threshold_lgb
 
-
+print("Done")
+del lgb
 
 # =============================================================================
 # Model 6 - Adaptive Boosting Classifier
@@ -196,7 +215,8 @@ threshold_adb = 0.4
 
 adb_pred = adb_pred_prob > threshold_adb
 
-
+print("Done")
+del adb
 
 # =============================================================================
 # Model 7 - Multilayer Perceptron Neural Network Classifier
@@ -216,6 +236,8 @@ threshold_nn = 0.4
 
 nn_pred = nn_pred_prob > threshold_nn
 
+print("Done")
+del model
 
 # =============================================================================
 # Combine all the trained models by voting 
