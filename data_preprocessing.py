@@ -237,7 +237,7 @@ def process_data(train_file, test_file, imbalance_corr = True, **kwargs):
         train_min_sampled = resample(train_min, replace = True,
                                      n_samples = len(train_maj))
         
-        train = pd.concat([train_maj, train_min_sampled])
+        train = pd.concat([train_maj, train_min_sampled], ignore_index=True)
         
         response = train['target']
         del train['target']

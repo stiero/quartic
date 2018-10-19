@@ -6,40 +6,103 @@ Created on Fri Oct 12 14:48:43 2018
 @author: tauro
 """
 
+import pandas as pd
+import numpy as np
+
+from sklearn.preprocessing import StandardScaler, PowerTransformer, MinMaxScaler, LabelEncoder
+from sklearn.metrics import accuracy_score, roc_auc_score, cohen_kappa_score, confusion_matrix
 from sklearn.model_selection import StratifiedKFold    
-
 from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 
-from sklearn.ensemble import RandomForestClassifier
 
 from lightgbm import LGBMClassifier
 
 from xgboost import XGBClassifier
 
+from scipy.stats import mode
+
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
 
 
-def stacking(model, train, response, n_fold):
+import gc
+import os
+from datetime import datetime
+
+from tqdm import tqdm
+tqdm.pandas(desc="progress-bar")
+
+#Custom file for data loading and preprocessing
+from data_preprocessing import process_data
+
+start_time = datetime.now()
+
+owd = os.getcwd()
+
+
+
+
+
+train, response, test, test_ids = process_data("data_train.csv", "data_test.csv", 
+                                               pca=False, scale=True)
+
+
+
+def stacking(model, train, response, test, test_ids, n_fold):
 
     kfold = StratifiedKFold(n_splits=n_fold, shuffle=True, random_state=1986)
     
-    list_gnb = []
+    col_name = str(model)
+    
+    list_model = []
     
     #train_new = np.empty((0,1), float)
-    train_new = pd.DataFrame()
     
-    for tr, te in kfold.split(train, response):
+    train_new = pd.DataFrame(columns=[col_name])
+    #test_new = pd.DataFrame()
+    
+    test_new = []
+    
+    
+    #test_new = []
+    
+    for tr, te in tqdm(kfold.split(train, response)):
+        gc.collect()
+        
         train_cv = train.iloc[tr]
         test_cv = train.iloc[te]
         
         response_train = response.iloc[tr]
         response_test = response.iloc[te]
         
+#        if model == bst:
+#            train_cv = xgb.DMatrix(train_cv, label=response_train)
+#            test_cv = xgb.DMatrix(test_cv, label=response_test)
+#            test_xgb = xgb.DMatrix(test)
+            
+
+        
         metrics_model = {}
         
+    
         model.fit(train_cv, response_train)
+        model_pred = pd.DataFrame({str(model): model.predict(test_cv)}, index=te)        
+       
+        #model_pred_test = pd.DataFrame(model.predict(test), index=test_ids)
         
-        model_pred = pd.DataFrame({str(model): model.predict(test_cv)}, index=te)
-        #model_pred_test = pd.Series(model.predict(test))
+        
+#        if model == bst:
+#            model_pred_test = model.predict(test_xgb)
+#            del test_xgb
+#            
+#            threshold_xgb = 0.4
+#            model_pred = model_pred > threshold_xgb
+#            model_pred_test = model_pred_test > threshold_xgb
+#            
+#        else:
+        model_pred_test = model.predict(test)
+
         
         accuracy = accuracy_score(response_test, model_pred)
         metrics_model['accuracy'] = accuracy
@@ -53,11 +116,30 @@ def stacking(model, train, response, n_fold):
         conf_matrix = confusion_matrix(response_test, model_pred)
         metrics_model['conf_matrix'] = conf_matrix
         
-        list_gnb.append(metrics_model)
+        list_model.append(metrics_model)
         
         train_new = pd.concat([train_new, model_pred], axis=0)
+        #test_new = pd.concat([test_new, model_pred_test], axis=1)
+        
+        test_new.append(model_pred_test)
+        
+        #test_new.append(model_pred_test)
+        
+    
+    test_new = np.array(test_new)
+    
+    new_test_col = mode(test_new)[0]
+    
+#    new_test_col = test_new.mode(axis=1)
+    new_test_col = pd.DataFrame(new_test_col.T, columns = [col_name])
+#    new_test_col.columns = [col_name]
+    
+    #new_test_col = pd.DataFrame({col_name:new_test_col}, index=test_ids)
+    
+    train = pd.concat([train, train_new], axis = 1)
+    test = pd.concat([test, new_test_col], axis = 1)
          
-    return train_new, model_pred_test
+    return train, test, list_model
 
 
 
@@ -69,27 +151,84 @@ params = {'max_depth': 2, 'eta': 0.5, 'silent': 0, 'objective': 'binary:logistic
 
 gnb = GaussianNB()
 
-rf = RandomForestClassifier(n_estimators = 2000, random_state = 50, verbose = 1,
+train, test, list_gnb = stacking(gnb, train, response, test, test_ids, n_fold=10)
+del gnb    
+
+
+rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
                                        n_jobs = -1, oob_score=True)
 
-lgb = LGBMClassifier(n_estimators=2000, objective='binary', class_weight='balanced',
+train, test, list_rf = stacking(rf, train, response, test, test_ids, n_fold=10)
+del rf
+
+
+lgb = LGBMClassifier(n_estimators=500, objective='binary', class_weight='balanced',
                      learning_rate=0.005, reg_alpha=0.5, reg_lambda=0.3, subsample=0.8,
                      n_jobs=-1, random_state=50)
 
-xgb = XGBClassifier(n_estimators=2000, **params)
+train, test, list_lgb = stacking(lgb, train, response, test, test_ids, n_fold=10)
+del lgb
 
 
-train_gnb, test_gnb = stacking(gnb, train = train, response = response, n_fold=10)
-train = pd.concat([train, train_gnb], axis = 1)
-test = pd.concat([test, test_gnb], axis = 1)
+adb = AdaBoostClassifier(n_estimators = 500, learning_rate = 0.76, algorithm = 'SAMME.R')
 
-train_rf, test_rf = stacking(rf, train = train, response = response, n_fold = 10)
-train = pd.concat([train, train_rf], axis = 1)
-test = pd.concat([test, test_rf], axis = 1)
+train, test, list_adb = stacking(adb, train, response, test, test_ids, n_fold=10)
+del adb
 
-train_lgb, test_lgb = stacking(lgb, train = train, response = response, n_fold = 10)
-train = pd.concat([train, train_lgb], axis = 1)
-test = pd.concat([test, test_lgb], axis = 1)
+
+xgb = XGBClassifier(n_estimators=500, **params)
+
+train, test, list_xgb = stacking(xgb, train, response, test, test_ids, n_fold=10)
+del xgb
+
+
+model = Sequential()
+model.add(Dense(100, input_dim=203, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(100, activation = 'relu'))
+model.add(Dropout(0.5))
+#model.add(Dense(100, activation = 'relu'))
+#model.add(Dropout(0.5))
+model.add(Dense(1, activation = 'sigmoid'))
+
+model.compile(loss='binary_crossentropy', optimizer = 'adam', 
+              metrics = ['accuracy'])
+    
+train, test, list_nn = stacking(model, train, response, test, test_ids, n_fold=10)
+del model
+
+
+end_time = datetime.now()
+
+time_taken = end_time - start_time
+
+print("\nTotal time taken to run is %d." % time_taken)
+
+
+#gnb = pickle.load(open(owd+"/models/gnb.pkl", 'rb'))
+#
+#
+#rf = joblib.load(owd+"/models/rf.joblib")
+#
+#
+#lgb = pickle.load(open(owd+"/models/lgb.pkl", 'rb'))
+#
+#
+#adb = pickle.load(open(owd+"/models/adb.pkl", 'rb'))
+#
+#
+#bst = pickle.load(open(owd+"/models/xgb.pkl", 'rb'))
+#
+#
+#nn = load_model(owd+"/models/nn.h5")
+
+
 
 
 
