@@ -23,6 +23,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.externals import joblib
 
 from datetime import datetime
 import os
@@ -206,9 +207,11 @@ gc.collect()
 
 list_rf = []
 
-rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
-                                       n_jobs = -1, oob_score=True)
+#rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
+#                                       n_jobs = -1, oob_score=True)
 
+
+rf = joblib.load(owd+"/models/rf.pkl")
 
 rf.fit(X_train, y_train)
 
@@ -244,6 +247,7 @@ metrics_rf['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0
 metrics_rf['feature_imp'] = feature_importance_values
 
 list_rf.append(metrics_rf)
+
 
 
 # =============================================================================
@@ -302,6 +306,7 @@ adb = pickle.load(open(owd+"/models/adb.pkl", 'rb'))
 adb_pred_prob = adb.predict_proba(X_test)[:,1]
 
 threshold_adb = 0.4
+
 
 adb_pred = adb_pred_prob > threshold_adb
 
@@ -363,11 +368,14 @@ metrics_nn['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0
 
 list_nn.append(metrics_nn)
 
-###################
+
+# =============================================================================
+
+# Discriminant analysis
 
 list_qda = []
 
-qda = QuadraticDiscriminantAnalysis(reg_param=0.0001, tol=0.0001)
+qda = pickle.load(open(owd+"/models/qda.pkl", 'rb'))
 
 qda.fit(X_train, y_train)
 
@@ -405,9 +413,13 @@ final_pred = np.array([])
 print("\nEach trained model has a vote on every test observation\n")
 
 for i in tqdm(range(len(X_test))):
+
     final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i], 
                                              rf_pred[i], nn_pred[i], adb_pred[i],
                                              qda_pred[i], lr_pred[i]])[0].item())
+
+#    final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i], 
+#                                             rf_pred[i], nn_pred[i], adb_pred[i]])[0].item())
 
 metrics_final = {}
 
