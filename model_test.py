@@ -21,9 +21,11 @@ from sklearn.impute import SimpleImputer
 from sklearn.decomposition import PCA 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
 from datetime import datetime
 import os
+import pickle
 
 #Progress bar
 from tqdm import tqdm
@@ -59,12 +61,16 @@ X_train, X_test, y_train, y_test = data_split(train, response)
 
 del train, response, test, test_ids
 
+
+
+
+
 # =============================================================================
 # Model 1 - Gaussian Naive Bayes classifier
 
 gc.collect()
 
-print("\nTraining a Gaussian Naive Bayes classifier - Model 1 of 5\n")
+print("\nTraining Gaussian Naive Bayes classifier - Model 1 of 8\n")
 
 list_gnb = []
 
@@ -100,12 +106,16 @@ metrics_gnb['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[
 list_gnb.append(metrics_gnb)
  
 
+
+
+
+
 # =============================================================================
 # Model 2 - XGBoost classifier 
 
 gc.collect()
 
-print("\nTraining XG Boost classifier - Model 2 of 5\n")
+print("\nTraining XG Boost classifier - Model 2 of 8\n")
 
 list_xgb = []
 
@@ -159,12 +169,18 @@ metrics_xgb['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[
 list_xgb.append(metrics_xgb)
 
 
+
+
+
+
 ###############################################################################
 
-##############################################################################
-
+# Model 3 - Random Forest classifier
 
 gc.collect()
+
+print("\nTraining XG Boost classifier - Model 3 of 8\n")
+
 
 list_rf = []
 
@@ -209,12 +225,17 @@ metrics_rf['feature_imp'] = feature_importance_values
 list_rf.append(metrics_rf)
 
 
+
+
+
+
+
 # =============================================================================
-# Model 3 - Light Gradient Boosting Machine Classifier 
+# Model 4 - Light Gradient Boosting Machine Classifier 
 
 gc.collect()
 
-print("\nTraining LGBM classifier - Model 3 of 5\n")
+print("\nTraining LGBM classifier - Model 4 of 8\n")
 
 list_lgb = []
 
@@ -257,12 +278,17 @@ metrics_lgb['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[
 list_lgb.append(metrics_lgb)
 
 
+
+
+
+
+
 # =============================================================================
-# Model 4 - Adaptive Boosting Classifier
+# Model 5 - Adaptive Boosting Classifier
 
 gc.collect()
 
-print("\nTraining AdaBoost classifier - Model 4 of 5\n")
+print("\nTraining AdaBoost classifier - Model 5 of 8\n")
 
 list_adb = []
 
@@ -302,12 +328,16 @@ list_adb.append(metrics_adb)
 
 
 
+
+
+
+
 # =============================================================================
-# Model 5 - Multilayer Perceptron Neural Network Classifier
+# Model 6 - Multilayer Perceptron Neural Network Classifier
 
 gc.collect()
 
-print("\nTraining MLP classifier - Model 5 of 5\n")
+print("\nTraining MLP classifier - Model 6 of 8\n")
 
 
 list_nn = []
@@ -353,11 +383,18 @@ metrics_nn['specificity'] = conf_matrix[0,0] / (conf_matrix[0,1] + conf_matrix[0
 list_nn.append(metrics_nn)
 
 
-# =============================================================================
 
-# Discriminant analysis
+
+
+# =============================================================================
+# Model 7 - Discriminant analysis
+
+gc.collect()
 
 list_qda = []
+
+print("\nTraining Quadratic discriminant analysis classifier - Model 7 of 8\n")
+
 
 qda = QuadraticDiscriminantAnalysis(reg_param=0.0001, tol=0.0001)
 
@@ -389,6 +426,30 @@ list_qda.append(metrics_qda)
 
 
 # =============================================================================
+# Model 4 - Logistic Regression classifier 
+
+gc.collect()
+
+print(""""
+      \nTraining a Logistic Regression classifier - Model 8 of 8\n
+      """)
+
+lr = pickle.load(open(owd+"/models/lr.pkl", 'rb'))
+
+lr_pred_prob = lr.predict_proba(X_test)[:,1]
+
+threshold_lr = 0.5
+
+lr_pred = lr_pred_prob > threshold_lr
+
+print("Done")
+del lr
+
+
+
+
+
+# =============================================================================
 # Combine all the trained models by voting 
 
 list_final = []
@@ -399,8 +460,7 @@ print("\nEach trained model has a vote on every test observation\n")
 
 for i in tqdm(range(len(X_test))):
     final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i],
-                                             adb_pred[i], rf_pred[i], nn_pred[i],
-                                             qda_pred[i]])[0].item())
+                                             adb_pred[i], rf_pred[i], nn_pred[i]])[0].item())
 
 metrics_final = {}
 

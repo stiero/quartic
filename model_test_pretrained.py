@@ -69,7 +69,7 @@ del train, response, test, test_ids
 
 gc.collect()
 
-print("\nTraining a Gaussian Naive Bayes classifier - Model 1 of 5\n")
+print("\nTraining a Gaussian Naive Bayes classifier - Model 1 of 8\n")
 
 list_gnb = []
 
@@ -108,7 +108,7 @@ list_gnb.append(metrics_gnb)
 
 gc.collect()
 
-print("\nTraining XG Boost classifier - Model 2 of 5\n")
+print("\nTraining XG Boost classifier - Model 2 of 8\n")
 
 list_xgb = []
 
@@ -169,6 +169,9 @@ gc.collect()
 
 list_lr = []
 
+print("\nTraining XG Boost classifier - Model 3 of 8\n")
+
+
 lr = pickle.load(open(owd+"/models/lr.pkl", 'rb'))
 
 lr_pred_prob = lr.predict_proba(X_test)[:,1]
@@ -207,11 +210,15 @@ gc.collect()
 
 list_rf = []
 
-#rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
-#                                       n_jobs = -1, oob_score=True)
+print("\nTraining Random Forest classifier - Model 4 of 8\n")
 
 
-rf = joblib.load(owd+"/models/rf.joblib")
+try:
+    rf = joblib.load(owd+"/models/rf.joblib")
+    
+except FileNotFoundError:
+    rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
+                                       n_jobs = -1, oob_score=True)
 
 rf.fit(X_train, y_train)
 
@@ -255,7 +262,7 @@ list_rf.append(metrics_rf)
 
 gc.collect()
 
-print("\nTraining LGBM classifier - Model 3 of 5\n")
+print("\nTraining LGBM classifier - Model 5 of 8\n")
 
 list_lgb = []
 
@@ -297,7 +304,7 @@ list_lgb.append(metrics_lgb)
 
 gc.collect()
 
-print("\nTraining AdaBoost classifier - Model 4 of 5\n")
+print("\nTraining AdaBoost classifier - Model 6 of 8\n")
 
 list_adb = []
 
@@ -341,7 +348,7 @@ list_adb.append(metrics_adb)
 
 gc.collect()
 
-print("\nTraining MLP classifier - Model 5 of 5\n")
+print("\nTraining MLP classifier - Model 7 of 8\n")
 
 
 list_nn = []
@@ -374,6 +381,8 @@ list_nn.append(metrics_nn)
 # Discriminant analysis
 
 gc.collect()
+
+print("\nTraining Quadratic discriminant analysis classifier - Model 8 of 8\n")
 
 list_qda = []
 

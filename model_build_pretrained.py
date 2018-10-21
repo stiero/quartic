@@ -21,6 +21,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.decomposition import PCA 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
 
@@ -63,22 +64,22 @@ train, response, test, test_ids = process_data("data_train.csv", "data_test.csv"
 
 
 
-
-
-
-
-
 # =============================================================================
-# Model 4 - Random Forest classifier 
+# Model 1 - Random Forest classifier 
 
 gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining a Random Forest classifier - Model 4 of 7\n
+      \nTraining a Random Forest classifier - Model 1 of 7\n
       """)
 
-rf = joblib.load("rf.joblib")
+try:
+    rf = joblib.load(owd+"/models/rf.joblib")
+    
+except FileNotFoundError:
+    rf = RandomForestClassifier(n_estimators = 500, random_state = 50, verbose = 1,
+                                       n_jobs = -1, oob_score=True)
 
 
 rf.fit(train, response)
@@ -96,14 +97,18 @@ rf_pred = rf_pred_prob > threshold_rf
 print("Done")
 del rf
 
+
+
+
+
 # =============================================================================
-# Model 1 - Gaussian Naive Bayes classifier
+# Model 2 - Gaussian Naive Bayes classifier
 
 gc.collect()
 
 print("""
       =============================================================================
-      \nTraining a Gaussian Naive Bayes classifier - Model 1 of 7\n
+      \nTraining a Gaussian Naive Bayes classifier - Model 2 of 7\n
       """)
 
 gnb = pickle.load(open(owd+"/models/gnb.pkl", 'rb'))
@@ -113,18 +118,22 @@ gnb_pred_prob = gnb.predict_proba(test)[:,1]
 threshold_gnb = 0.3
 
 gnb_pred = gnb_pred_prob > threshold_gnb
+print("Done")
 
 del gnb
  
 
+
+
+
 # =============================================================================
-# Model 2 - XGBoost classifier 
+# Model 3 - XGBoost classifier 
 
 gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining an XGBoost classifier - Model 2 of 7\n
+      \nTraining an XGBoost classifier - Model 3 of 7\n
       """)
 
 
@@ -152,14 +161,18 @@ xgb_pred = xgb_pred_prob > threshold_xgb
 print("Done")
 del bst
 
+
+
+
+
 # =============================================================================
-# Model 3 - Logistic Regression classifier 
+# Model 4 - Logistic Regression classifier 
 
 gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining a Logistic Regression classifier - Model 3 of 7\n
+      \nTraining a Logistic Regression classifier - Model 4 of 7\n
       """)
 
 lr = pickle.load(open(owd+"/models/lr.pkl", 'rb'))
@@ -174,7 +187,29 @@ print("Done")
 del lr
 
 
+
+
 # =============================================================================
+# Model 5 - Discriminant analysis
+
+gc.collect()
+
+list_qda = []
+
+qda = pickle.load(open(owd+"/models/qda.pkl", 'rb'))
+
+qda.fit(train, response)
+
+qda_pred_prob = qda.predict_proba(test)[:,1]
+
+threshold_qda = 0.0001
+
+qda_pred = qda_pred_prob > threshold_qda
+
+print("Done")
+del qda
+
+
 
 
 # =============================================================================
@@ -197,6 +232,9 @@ lgb_pred = lgb_pred_prob > threshold_lgb
 print("Done")
 del lgb
 
+
+
+
 # =============================================================================
 # Model 6 - Adaptive Boosting Classifier
 
@@ -218,6 +256,9 @@ adb_pred = adb_pred_prob > threshold_adb
 print("Done")
 del adb
 
+
+
+
 # =============================================================================
 # Model 7 - Multilayer Perceptron Neural Network Classifier
 
@@ -238,6 +279,9 @@ nn_pred = nn_pred_prob > threshold_nn
 
 print("Done")
 del model
+
+
+
 
 # =============================================================================
 # Combine all the trained models by voting 
