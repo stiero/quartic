@@ -53,7 +53,7 @@ def stacking(model, train, response, test, test_ids, n_fold):
 
     kfold = StratifiedKFold(n_splits=n_fold, shuffle=True, random_state=1986)
     
-    col_name = str(model)
+    col_name = str(model)[:10]
     
     list_model = []
     
@@ -87,7 +87,8 @@ def stacking(model, train, response, test, test_ids, n_fold):
         
     
         model.fit(train_cv, response_train)
-        model_pred = pd.DataFrame({str(model): model.predict(test_cv)}, index=te)        
+        model_pred = pd.DataFrame({col_name: model.predict(test_cv)}, index=te)
+        model_pred[col_name] = model_pred[col_name].astype(int)        
        
         #model_pred_test = pd.DataFrame(model.predict(test), index=test_ids)
         
@@ -132,6 +133,7 @@ def stacking(model, train, response, test, test_ids, n_fold):
     
 #    new_test_col = test_new.mode(axis=1)
     new_test_col = pd.DataFrame(new_test_col.T, columns = [col_name])
+    new_test_col[col_name] = new_test_col[col_name].astype(int)
 #    new_test_col.columns = [col_name]
     
     #new_test_col = pd.DataFrame({col_name:new_test_col}, index=test_ids)
@@ -170,45 +172,8 @@ train, test, list_lgb = stacking(lgb, train, response, test, test_ids, n_fold=10
 del lgb
 
 
-adb = AdaBoostClassifier(n_estimators = 500, learning_rate = 0.76, algorithm = 'SAMME.R')
-
-train, test, list_adb = stacking(adb, train, response, test, test_ids, n_fold=10)
-del adb
 
 
-xgb = XGBClassifier(n_estimators=500, **params)
-
-train, test, list_xgb = stacking(xgb, train, response, test, test_ids, n_fold=10)
-del xgb
-
-
-model = Sequential()
-model.add(Dense(100, input_dim=203, activation = 'relu'))
-model.add(Dropout(0.5))
-model.add(Dense(100, activation = 'relu'))
-model.add(Dropout(0.5))
-model.add(Dense(100, activation = 'relu'))
-model.add(Dropout(0.5))
-model.add(Dense(100, activation = 'relu'))
-model.add(Dropout(0.5))
-model.add(Dense(100, activation = 'relu'))
-model.add(Dropout(0.5))
-#model.add(Dense(100, activation = 'relu'))
-#model.add(Dropout(0.5))
-model.add(Dense(1, activation = 'sigmoid'))
-
-model.compile(loss='binary_crossentropy', optimizer = 'adam', 
-              metrics = ['accuracy'])
-    
-train, test, list_nn = stacking(model, train, response, test, test_ids, n_fold=10)
-del model
-
-
-end_time = datetime.now()
-
-time_taken = end_time - start_time
-
-print("\nTotal time taken to run is %d." % time_taken)
 
 
 #gnb = pickle.load(open(owd+"/models/gnb.pkl", 'rb'))
