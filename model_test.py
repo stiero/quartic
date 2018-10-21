@@ -179,7 +179,7 @@ feature_importance_values = rf.feature_importances_
 
 rf_pred_prob = rf.predict_proba(X_test)[:,1]
 
-threshold_rf = 0.5
+threshold_rf = 0.4
 
 rf_pred = rf_pred_prob > threshold_rf
 
@@ -228,7 +228,7 @@ lgb.fit(X_train, y_train, eval_metric='auc', verbose=True)
 #lgb_pred = lgb.predict(X_test)
 lgb_pred_prob = lgb.predict_proba(X_test)[:,1]
 
-threshold_lgb = 0.5
+threshold_lgb = 0.4
 
 lgb_pred = lgb_pred_prob > threshold_lgb
 
@@ -272,7 +272,7 @@ adb.fit(X_train, y_train)
 
 adb_pred_prob = adb.predict_proba(X_test)[:,1]
 
-threshold_adb = 0.5
+threshold_adb = 0.4
 
 adb_pred = adb_pred_prob > threshold_adb
 

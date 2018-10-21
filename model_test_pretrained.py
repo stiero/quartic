@@ -129,7 +129,7 @@ num_rounds = 500
 bst = pickle.load(open(owd+"/models/xgb.pkl", 'rb'))
 xgb_pred_prob = bst.predict(dtest)
 
-threshold_xgb = 0.4
+threshold_xgb = 0.5
 
 
 xgb_pred = xgb_pred_prob > threshold_xgb
@@ -211,7 +211,7 @@ list_rf = []
 #                                       n_jobs = -1, oob_score=True)
 
 
-rf = joblib.load(owd+"/models/rf.pkl")
+rf = joblib.load(owd+"/models/rf.joblib")
 
 rf.fit(X_train, y_train)
 
@@ -373,9 +373,13 @@ list_nn.append(metrics_nn)
 
 # Discriminant analysis
 
+gc.collect()
+
 list_qda = []
 
-qda = pickle.load(open(owd+"/models/qda.pkl", 'rb'))
+qda = QuadraticDiscriminantAnalysis(reg_param=0.0001, tol=0.0001)
+
+#qda = pickle.load(open(owd+"/models/qda.pkl", 'rb'))
 
 qda.fit(X_train, y_train)
 
@@ -415,8 +419,7 @@ print("\nEach trained model has a vote on every test observation\n")
 for i in tqdm(range(len(X_test))):
 
     final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i], 
-                                             rf_pred[i], nn_pred[i], adb_pred[i],
-                                             qda_pred[i], lr_pred[i]])[0].item())
+                                             rf_pred[i], nn_pred[i], adb_pred[i]])[0].item())
 
 #    final_pred = np.append(final_pred, mode([gnb_pred[i], xgb_pred[i], lgb_pred[i], 
 #                                             rf_pred[i], nn_pred[i], adb_pred[i]])[0].item())
