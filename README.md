@@ -16,7 +16,7 @@ The important files are explained as follows -
 
 I set aside a portion of my machine's disk space as swap memory to train and validate several models. Since this is a big dataset and preprocessing made it even bigger, I had issues with RAM, with tasks often stopping due to memory exhaustion.
 
-Training an ensemble with the Random Forest model takes up most RAM (around 8-10 GB).
+Training an ensemble with the Random Forest model takes up most RAM (around 8-10 GB). If you run out of RAM, you may remove the RF model from the ensemble but this may affect the quality of predictions.
 
 ##### Dependencies
 I ran the project on Ubuntu 16.04 LTS on a machine with 12 GB of RAM. 
