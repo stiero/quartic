@@ -71,7 +71,7 @@ gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining a Random Forest classifier - Model 1 of 7\n
+      \nTraining a Random Forest classifier - Model 1 of 8\n
       """)
 
 try:
@@ -108,7 +108,7 @@ gc.collect()
 
 print("""
       =============================================================================
-      \nTraining a Gaussian Naive Bayes classifier - Model 2 of 7\n
+      \nTraining a Gaussian Naive Bayes classifier - Model 2 of 8\n
       """)
 
 gnb = pickle.load(open(owd+"/models/gnb.pkl", 'rb'))
@@ -133,7 +133,7 @@ gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining an XGBoost classifier - Model 3 of 7\n
+      \nTraining an XGBoost classifier - Model 3 of 8\n
       """)
 
 
@@ -172,7 +172,7 @@ gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining a Logistic Regression classifier - Model 4 of 7\n
+      \nTraining a Logistic Regression classifier - Model 4 of 8\n
       """)
 
 lr = pickle.load(open(owd+"/models/lr.pkl", 'rb'))
@@ -196,6 +196,11 @@ gc.collect()
 
 list_qda = []
 
+print(""""
+      =============================================================================
+      \nTraining Quadratic discriminant analysis classifier - Model 5 of 8\n
+      """)
+
 qda = pickle.load(open(owd+"/models/qda.pkl", 'rb'))
 
 qda.fit(train, response)
@@ -213,13 +218,13 @@ del qda
 
 
 # =============================================================================
-# Model 5 - Light Gradient Boosting Machine Classifier 
+# Model 6 - Light Gradient Boosting Machine Classifier 
 
 gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining a Light Gradient Boosting classifier - Model 5 of 7\n
+      \nTraining a Light Gradient Boosting classifier - Model 6 of 8\n
       """)
 lgb = pickle.load(open(owd+"/models/lgb.pkl", 'rb'))
 
@@ -236,13 +241,13 @@ del lgb
 
 
 # =============================================================================
-# Model 6 - Adaptive Boosting Classifier
+# Model 7 - Adaptive Boosting Classifier
 
 gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining a Adaptive Boosting classifier - Model 6 of 7\n
+      \nTraining a Adaptive Boosting classifier - Model 7 of 8\n
       """)
 
 adb = pickle.load(open(owd+"/models/adb.pkl", 'rb'))
@@ -260,13 +265,13 @@ del adb
 
 
 # =============================================================================
-# Model 7 - Multilayer Perceptron Neural Network Classifier
+# Model 8 - Multilayer Perceptron Neural Network Classifier
 
 gc.collect()
 
 print(""""
       =============================================================================
-      \nTraining a Multilayer Perceptron classifier - Model 7 of 7\n
+      \nTraining a Multilayer Perceptron classifier - Model 8 of 8\n
       """)
 
 model = load_model(owd+"/models/nn.h5")

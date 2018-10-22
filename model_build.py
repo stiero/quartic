@@ -194,7 +194,7 @@ lgb_pred_prob = lgb.predict_proba(test)[:,1]
 threshold_lgb = 0.4
 
 lgb_pred = lgb_pred_prob > threshold_lgb
-
+del lgb
 
 
 
@@ -216,7 +216,7 @@ adb_pred_prob = adb.predict_proba(test)[:,1]
 threshold_adb = 0.4
 
 adb_pred = adb_pred_prob > threshold_adb
-
+del adb
 
 
 
@@ -254,7 +254,7 @@ nn_pred_prob = model.predict(test)
 threshold_nn = 0.4
 
 nn_pred = nn_pred_prob > threshold_nn
-
+del model
 
 
 
@@ -277,7 +277,7 @@ qda_pred_prob = qda.predict_proba(test)[:,1]
 threshold_qda = 0.0001
 
 qda_pred = qda_pred_prob > threshold_qda
-
+del qda
 
 
 
