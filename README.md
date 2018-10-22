@@ -8,7 +8,7 @@ There is also a script that trains models from scratch - model_build.py.
 
 The important files are explained as follows - 
 - model_build_pretrained.py, model_build.py - The script that implements majority voting of several classifiers.
-- model_test_pretrained.py, model_test.py - The script I primarily used to quickly train and test models.
+- model_test_pretrained.py, model_test.py - The script I primarily used to quickly train and test models and evaluate their performance.
 - data_preprocessing.py - Contains callable functions to load and preprocess data. 
 - gridsearch.py - Script for finding out optimal parameters for a model.
 - kbest.py - Script for finding out the 'k' best features.
