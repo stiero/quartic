@@ -2,7 +2,7 @@
 
 ##### Notes
 
-To get started right away, just run **model_build_pretrained.py**. Also, place the data files (not included in the repo) in the base directory. The end results are written in **voting_ensemble_predictions.csv**. Here I use previously trained and saved models for the task (the only exception is random forest, whose model could not be saved due to its size).  
+To get started right away, just run **model_build_pretrained.py**. Also, place the data files (not included in the repo) in the 'data' directory. The end results are written in **voting_ensemble_predictions.csv**. Here I use previously trained and saved models for the task (the only exception is random forest, whose model could not be saved due to its size).  
 
 There is also a script that trains models from scratch - model_build.py. 
 
@@ -40,6 +40,7 @@ source activate your_env_name
 - Outcome value of '0' is a non-event, a value of '1' is an event.
 - There is no ordinal relationship between the categories in any given categorical feature.
 - The derived ('der') features are all numeric and not categorical.
+- In the mailer you sent, the 'target' column in the result csv is described as a 'predicted probability'. However, in the training data the same variable is binary, so I included the final binary prediction in the column. The actual probabilities can be obtained by tweaking the code slightly, just in case.  
 
 ### 1a) My approach
 
@@ -82,7 +83,6 @@ source activate your_env_name
 - I would also experiment with some more feature engineering to more accurately capture the patterns in the data. Perhaps try a few polynomial combination of numerical features to see how the models behave, to see if there is an interaction effect between them. I have also read reports from a few practitioners about generating new features by building clustering models of the existing data.
 
 - Another thing on my list would be stacking different models, ie. adding the response of one model as an input feature to train the next model. I prepared a script for this, but running it takes a very long time, since each model must be trained with a k-fold cross validation and these models each have to be tuned first to perform well.
-
 
 
 

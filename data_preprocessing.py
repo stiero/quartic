@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Oct 15 22:11:44 2018
-
-@author: tauro
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
 Created on Tue Oct  2 14:56:18 2018
 
 @author: tauro
@@ -47,7 +39,7 @@ def process_data(train_file, test_file, imbalance_corr = True, **kwargs):
     
     gc.collect()
     
-    #os.chdir("./data")
+    os.chdir(owd+"/data")
     
     print("\nCommencing data loading and preprocessing\n")
         
