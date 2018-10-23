@@ -23,14 +23,14 @@ I ran the project on Ubuntu 16.04 LTS on a machine with 12 GB of RAM.
 
 I use the Miniconda Python distribution on my machine, and so I created a separate conda virtual environment for this project (clone file included).
 
-To clone an identical environment in your local setup, navigate to the repository and run
+To clone an identical environment in your local setup -
 
 ```sh
 cd env
 conda create --name your_env_name --file quartic_env.txt
 ```
 
-Then activate your environment by running
+To activate your environment -
 
 ```sh
 source activate your_env_name
