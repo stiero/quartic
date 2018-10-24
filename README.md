@@ -68,7 +68,7 @@ source activate your_env_name
 
 - After running a (very) lengthy grid search over several nights, the best individual model I could train had an ROC AUC of 0.62. I used AUC as the primary metric to gauge model performance because plain accuracy is blind to the sensitivity-specificity tradeoff.
 - For the final majority voting classification, I zeroed in on a total of 6 classification models. They include Logistic regression, Random Forest, XGBoost, Adaptive Boost, Light Gradient Boosting Machines and Multilayer Perceptron neural network.
-- Through majority voting, I finally arrived at the following metrics on the validation split -
+- Through majority voting, I finally arrived at the following metrics on the validation split. These values may vary slightly between runs because of the randomness of sampling (I did not use a seed value). -
 
 | Metric | Value |
 | ------ | ------ |
@@ -84,7 +84,6 @@ source activate your_env_name
 - I would also experiment with some more feature engineering to more accurately capture the patterns in the data. Perhaps try a few polynomial combination of numerical features to see how the models behave, to see if there is an interaction effect between them. I have also read reports from a few practitioners about generating new features by building clustering models of the existing data.
 
 - Another thing on my list would be stacking different models, ie. adding the response of one model as an input feature to train the next model. I prepared a script for this, but running it takes a very long time, since each model must be trained with a k-fold cross validation and these models each have to be tuned first to perform well.
-
 
 
 
