@@ -12,6 +12,7 @@ The important files are explained as follows -
 - data_preprocessing.py - Contains callable functions to load and preprocess data. 
 - gridsearch.py - Script for finding out optimal parameters for a model.
 - kbest.py - Script for finding out the 'k' best features.
+- stacking.py - Script to train an ensemble by stacking disparate models one on top of another. Takes very a long time to run on an ordinary laptop. 
 
 
 I set aside a portion of my machine's disk space as swap memory to train and validate several models. Since this is a big dataset and preprocessing made it even bigger, I had issues with RAM, with tasks often stopping due to memory exhaustion.
@@ -23,14 +24,14 @@ I ran the project on Ubuntu 16.04 LTS on a machine with 12 GB of RAM.
 
 I use the Miniconda Python distribution on my machine, and so I created a separate conda virtual environment for this project (clone file included).
 
-To clone an identical environment in your local setup -
+To clone an identical environment in your local setup, navigate to the repository and run
 
 ```sh
 cd env
 conda create --name your_env_name --file quartic_env.txt
 ```
 
-To activate your environment -
+Then activate your environment by running
 
 ```sh
 source activate your_env_name
@@ -83,6 +84,8 @@ source activate your_env_name
 - I would also experiment with some more feature engineering to more accurately capture the patterns in the data. Perhaps try a few polynomial combination of numerical features to see how the models behave, to see if there is an interaction effect between them. I have also read reports from a few practitioners about generating new features by building clustering models of the existing data.
 
 - Another thing on my list would be stacking different models, ie. adding the response of one model as an input feature to train the next model. I prepared a script for this, but running it takes a very long time, since each model must be trained with a k-fold cross validation and these models each have to be tuned first to perform well.
+
+
 
 
 
