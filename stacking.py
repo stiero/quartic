@@ -49,6 +49,9 @@ train, response, test, test_ids = process_data("data_train.csv", "data_test.csv"
 
 
 
+
+
+
 def stacking(model, train, response, test, test_ids, n_fold):
 
     kfold = StratifiedKFold(n_splits=n_fold, shuffle=True, random_state=1986)
@@ -56,16 +59,12 @@ def stacking(model, train, response, test, test_ids, n_fold):
     col_name = str(model)[:10]
     
     list_model = []
-    
-    #train_new = np.empty((0,1), float)
-    
+        
     train_new = pd.DataFrame(columns=[col_name])
-    #test_new = pd.DataFrame()
     
     test_new = []
     
     
-    #test_new = []
     
     for tr, te in tqdm(kfold.split(train, response)):
         gc.collect()
@@ -76,11 +75,6 @@ def stacking(model, train, response, test, test_ids, n_fold):
         response_train = response.iloc[tr]
         response_test = response.iloc[te]
         
-#        if model == bst:
-#            train_cv = xgb.DMatrix(train_cv, label=response_train)
-#            test_cv = xgb.DMatrix(test_cv, label=response_test)
-#            test_xgb = xgb.DMatrix(test)
-            
 
         
         metrics_model = {}
@@ -90,18 +84,7 @@ def stacking(model, train, response, test, test_ids, n_fold):
         model_pred = pd.DataFrame({col_name: model.predict(test_cv)}, index=te)
         model_pred[col_name] = model_pred[col_name].astype(int)        
        
-        #model_pred_test = pd.DataFrame(model.predict(test), index=test_ids)
-        
-        
-#        if model == bst:
-#            model_pred_test = model.predict(test_xgb)
-#            del test_xgb
-#            
-#            threshold_xgb = 0.4
-#            model_pred = model_pred > threshold_xgb
-#            model_pred_test = model_pred_test > threshold_xgb
-#            
-#        else:
+
         model_pred_test = model.predict(test)
 
         
@@ -120,23 +103,18 @@ def stacking(model, train, response, test, test_ids, n_fold):
         list_model.append(metrics_model)
         
         train_new = pd.concat([train_new, model_pred], axis=0)
-        #test_new = pd.concat([test_new, model_pred_test], axis=1)
         
         test_new.append(model_pred_test)
         
-        #test_new.append(model_pred_test)
         
     
     test_new = np.array(test_new)
     
     new_test_col = mode(test_new)[0]
     
-#    new_test_col = test_new.mode(axis=1)
     new_test_col = pd.DataFrame(new_test_col.T, columns = [col_name])
     new_test_col[col_name] = new_test_col[col_name].astype(int)
-#    new_test_col.columns = [col_name]
     
-    #new_test_col = pd.DataFrame({col_name:new_test_col}, index=test_ids)
     
     train = pd.concat([train, train_new], axis = 1)
     test = pd.concat([test, new_test_col], axis = 1)
